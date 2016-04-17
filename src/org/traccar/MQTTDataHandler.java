@@ -15,12 +15,15 @@
  */
 package org.traccar;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-import org.glassfish.hk2.utilities.reflection.Logger;
 import org.traccar.model.Device;
 import org.traccar.model.Event;
 import org.traccar.model.MiscFormatter;
@@ -28,47 +31,27 @@ import org.traccar.model.Position;
 
 public class MQTTDataHandler extends BaseDataHandler {
 
-	private static String url = Context.getConfig().getString("mqtt.url");
-	private static String clientId = Context.getConfig().getString("mqtt.clientId");
-	private static String user = Context.getConfig().getString("mqtt.user"); 
-	private static String password =Context.getConfig().getString("mqtt.password");
-	private static int qos = Context.getConfig().getInteger("mqtt.qos");
-	private static String topic = Context.getConfig().getString("mqtt.topic");
-	private static MqttClient client = null;
-	
-	static {
-		
-		try {
-			client = new MqttClient(url, clientId, new MemoryPersistence());
-			MqttConnectOptions connOpts = new MqttConnectOptions();
-			connOpts.setUserName(user);
-			connOpts.setPassword(password.toCharArray());
-			connOpts.setCleanSession(true);
-			System.out.print("Connecting to broker: " + url+".");
-			client.connect(connOpts);
-			System.out.println("Connected.");
-		} catch (MqttException e) {
-			e.printStackTrace();
-		}
-		
-	}
+	private static int qos = 2;
+	private static String topic;
+	private static double minIdleSpeed = 1.0;
+	private static MqttClient client; 
+	private static Map<String, Short> power = new HashMap<String, Short>();
+	private static Map<String, String> trips = new HashMap<String, String>();
+	private static Map<String, String> rests = new HashMap<String, String>();
+	private static Map<String, String> idles = new HashMap<String, String>();
 
-	private String calculateStatus(Position position) {
-		if (position.getAttributes().containsKey(Event.KEY_ALARM)) {
-			return "0xF841"; // STATUS_PANIC_ON
-		} else if (position.getSpeed() < 1.0) {
-			return "0xF020"; // STATUS_LOCATION
-		} else {
-			return "0xF11C"; // STATUS_MOTION_MOVING
-		}
-	}
-
-	public String formatRequest(Position position) {
+	private String formatRequest(Position position) {
 
 		Device device = Context.getIdentityManager().getDeviceById(position.getDeviceId());
-
-		String attributes = MiscFormatter.toJsonString(position.getAttributes());
-
+		
+		String state = updateState(position, device);
+		String substate = "";
+		
+		if ("idle".equals(state)) {
+			state="start";
+			substate="idle";
+		}
+		
 		String template = Context.getConfig().getString("mqtt.template");
 
 		String request = template
@@ -84,19 +67,91 @@ public class MQTTDataHandler extends BaseDataHandler {
 			.replace("##altitude##", String.valueOf(position.getAltitude()))
 			.replace("##speed##", String.valueOf(position.getSpeed()))
 			.replace("##course##", String.valueOf(position.getCourse()))
-			.replace("##statusCode##", calculateStatus(position));
+			.replace("##state##", state)
+			.replace("##substate##", substate);
 
 		if (position.getAddress() != null) {
 			request = request.replace("##address##", position.getAddress());
-		}
-
-		if (request.contains("##attributes##")) {
-			request = request.replace("##attributes##", attributes);
+		} 
+	
+		if (position.getAttributes().size() > 0) {
+			request = request.replace("##attributes##", MiscFormatter.toJsonString(position.getAttributes()));
 		}
 
 		return request;
 	}
 
+	private String updateState(Position position, Device device) {
+		
+		Short newPowerState = (Short) position.getAttributes().get(Event.KEY_POWER);
+		Short previousPowerState = power.get(device.getUniqueId());
+		
+		String trip = trips.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : trips.get(device.getUniqueId());
+		String rest = rests.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : rests.get(device.getUniqueId());
+		
+		String state = "unknown";
+		
+		if (previousPowerState != newPowerState) {			
+			power.put(device.getUniqueId(), newPowerState);
+			if (newPowerState == 1) { // new trip			
+				trip = UUID.randomUUID().toString();
+				state = "start";
+			} else { // new rest
+				rest = UUID.randomUUID().toString();
+				state = "stop";
+			}
+		} 
+		
+		trips.put(device.getUniqueId(), trip);
+		rests.put(device.getUniqueId(), rest);
+		
+		position.set("trip", trip);
+		position.set("rest", rest);
+		
+		if (position.getSpeed() < minIdleSpeed) { 
+			String idle = idles.get(device.getUniqueId());
+			if (idle == null) { // new idle
+				idle = UUID.randomUUID().toString();
+				idles.put(device.getUniqueId(), idle);
+			} 
+			position.set("idle", idle);
+			if ("start".equals(state)) {
+				state="idle";
+			}
+		} else {
+			idles.remove(device.getUniqueId());
+		}
+		
+		return state;
+	}
+	
+	private static MqttClient getClient() {
+		if (client != null) {
+			return client;
+		} 
+		String url = Context.getConfig().getString("mqtt.url");
+		String clientId = Context.getConfig().getString("mqtt.clientId");
+		String user = Context.getConfig().getString("mqtt.user"); 
+		String password = Context.getConfig().getString("mqtt.password");
+		minIdleSpeed = Context.getConfig().getInteger("fleetr.minIdleSpeed");
+		qos = Context.getConfig().getInteger("mqtt.qos");
+		topic = Context.getConfig().getString("mqtt.topic");
+		
+		try {
+			client = new MqttClient(url, clientId, new MemoryPersistence());
+			MqttConnectOptions connOpts = new MqttConnectOptions();
+			if (user != null) connOpts.setUserName(user);
+			if (password != null) connOpts.setPassword(password.toCharArray());
+			connOpts.setCleanSession(true);
+			System.out.print("Connecting to broker: " + url+".");
+			client.connect(connOpts);
+			System.out.println("Connected.");
+		} catch (MqttException e) {
+			e.printStackTrace();
+		}
+		return client;
+	}
+	
 	@Override
 	protected Position handlePosition(Position position) {
 
@@ -106,7 +161,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 		MqttMessage message = new MqttMessage(content.getBytes());
 		message.setQos(qos);
 		try {
-			client.publish(topic, message);
+			getClient().publish(topic, message);
 		} catch (MqttException e) {
 			e.printStackTrace();
 		}

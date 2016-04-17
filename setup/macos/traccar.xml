@@ -4,8 +4,9 @@
 
 <properties>
 
-	<!-- MQTT CONFIG -->
+	<!-- FLEETR CONFIG -->
 
+	 <entry key='fleetr.minIdleSpeed'>1.0</entry>
 	 <entry key='extra.handlers'>org.traccar.MQTTDataHandler</entry>
      <entry key='mqtt.url'>tcp://m10.cloudmqtt.com:14119</entry>
      <entry key='mqtt.user'>hkzbknix</entry>
@@ -25,7 +26,8 @@
        "altitude":##altitude##, 
        "speed":##speed##, 
        "course":##course##, 
-       "statusCode":"##statusCode##",
+       "state":"##state##",
+       "substate":"##substate##",
        "address":"##address##",
        "attributes":##attributes##
      }
