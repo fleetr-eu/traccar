@@ -44,7 +44,6 @@ public class MQTTDataHandler extends BaseDataHandler {
 
 	public MQTTDataHandler() {
 		initMQTTClient();
-		System.out.println("MQTTDataHandler: waiting for reports.");
 	}
 	
 	private String formatRequest(Position position) {
