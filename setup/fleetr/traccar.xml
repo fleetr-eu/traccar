@@ -3,46 +3,36 @@
 <!DOCTYPE properties SYSTEM 'http://java.sun.com/dtd/properties.dtd'>
 
 <properties>
-		<!-- FLEETR SPECIFIC CONFIG -->
-		<entry key='teltonika.enable'>true</entry>
-
-		<!-- <entry key='forward.enable'>true</entry>
-		<entry key='forward.url'>http://traccar-mqtt:4000/gprmc?id={uniqueId}&amp;gprmc={gprmc}&amp;statusCode={statusCode}&amp;attributes={attributes}&amp;latitude={latitude}&amp;longitude={longitude}&amp;speed={speed}&amp;course={course}&amp;deviceTime={deviceTime}</entry> -->
-
 	<!-- FLEETR CONFIG -->
+  <entry key='teltonika.enable'>true</entry>
 
-	 <entry key='fleetr.minIdleSpeed'>1.0</entry>
-	 
-	 <entry key='extra.handlers'>org.traccar.MQTTDataHandler</entry>
-  	 <entry key='mqtt.url'>tcp://mqtt:1883</entry>
-  	<!--  
-  		<entry key='mqtt.url'>tcp://m10.cloudmqtt.com:14119</entry>
-  		<entry key='mqtt.user'>hkzbknix</entry>
-     	<entry key='mqtt.password'>CqGfuB61cbJ2</entry>
-     -->
-   	 <entry key='mqtt.clientId'>fleetr_traccar</entry>
-     <entry key='mqtt.topic'>/fleetr/traccar</entry>
-     <entry key='mqtt.qos'>2</entry>
-     <entry key='mqtt.template'>
-     { "name":"##name##}", 
-       "deviceId": ##uniqueId##, 
-       "protocol":"##protocol##",
-       "type": ##eventType##,
-       "recordTime":{"$date":##deviceTime##}, 
-       "offset":##deviceTime##,
-       "fixTime": {"$date":##fixTime##}, 
-       "valid":##valid##, 
-       "lat":##latitude##, 
-       "lon":##longitude##, 
-       "loc":[##longitude##,##latitude##],
-       "altitude":##altitude##, 
-       "speed":##speed##, 
-       "course":##course##, 
-       "state":"##state##",
-       "address":"##address##",
-       "attributes":##attributes##
-     }
-     </entry>
+	<entry key='fleetr.minIdleSpeed'>1.0</entry>
+
+	<entry key='extra.handlers'>org.traccar.MQTTDataHandler</entry>
+	<entry key='mqtt.url'>tcp://mqtt:1883</entry>
+	<entry key='mqtt.topic'>/fleetr/records</entry>
+	<entry key='mqtt.clientId'>fleetr_traccar</entry>
+	<entry key='mqtt.qos'>2</entry>
+	<entry key='mqtt.template'>
+	{ "name":"##name##}",
+		"deviceId": ##uniqueId##,
+		"protocol":"##protocol##",
+		"type": ##eventType##,
+		"recordTime":{"$date":##deviceTime##},
+		"offset":##deviceTime##,
+		"fixTime": {"$date":##fixTime##},
+		"valid":##valid##,
+		"lat":##latitude##,
+		"lon":##longitude##,
+		"loc":[##longitude##,##latitude##],
+		"altitude":##altitude##,
+		"speed":##speed##,
+		"course":##course##,
+		"state":"##state##",
+		"address":"##address##",
+		"attributes":##attributes##
+	}
+	</entry>
 
     <!-- SERVER CONFIG -->
 
