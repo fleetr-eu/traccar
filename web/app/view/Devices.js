@@ -27,7 +27,7 @@ Ext.define('Traccar.view.Devices', {
     controller: 'devices',
     rootVisible: false,
 
-    initComponent: function() {
+    initComponent: function () {
         this.store = Ext.create('Ext.data.ChainedStore', {
             source: 'Devices',
             groupField: 'groupId'
@@ -37,19 +37,6 @@ Ext.define('Traccar.view.Devices', {
 
     title: Strings.deviceTitle,
     selType: 'rowmodel',
-    features: [{
-        ftype: 'grouping',
-        groupHeaderTpl: Ext.create('Ext.XTemplate', '{name:this.getGroupName}', {
-            getGroupName: function (v) {
-                var groupId = Number(v);
-                if (groupId) {
-                    return Ext.getStore('Groups').getById(groupId).get('name');
-                } else {
-                    return Strings.groupNoGroup;
-                }
-            }
-        })
-    }],
 
     tbar: {
         xtype: 'editToolbar',
@@ -88,7 +75,7 @@ Ext.define('Traccar.view.Devices', {
                 if (Ext.isNumber(this.getValue())) {
                     this.up('grid').store.filter({
                         id: 'groupFilter',
-                        filterFn: function(item) {
+                        filterFn: function (item) {
                             var groupId, group, groupStore, filter = true;
                             groupId = item.get('groupId');
                             groupStore = Ext.getStore('Groups');
@@ -109,7 +96,7 @@ Ext.define('Traccar.view.Devices', {
                             return !filter;
                         },
                         scope: this
-                });
+                    });
                 } else {
                     this.up('grid').store.removeFilter('groupFilter');
                 }

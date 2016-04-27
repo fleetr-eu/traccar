@@ -38,7 +38,7 @@
     <!-- SERVER CONFIG -->
 
     <entry key='web.enable'>true</entry>
-    <entry key='web.port'>8082</entry>
+    <entry key='web.port'>8083</entry>
     <entry key='web.path'>/Users/pokraev/Development/Java/sts/traccar/web/</entry>
 
     <entry key='geocoder.enable'>true</entry>
@@ -120,6 +120,10 @@
     </entry>
 
     <entry key='database.getPermissionsAll'>
+        SELECT userId, deviceId FROM user_device;
+    </entry>
+    
+    <entry key='database.getDevicePermissions'>
         SELECT userId, deviceId FROM user_device;
     </entry>
 

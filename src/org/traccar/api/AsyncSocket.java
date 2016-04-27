@@ -25,44 +25,44 @@ import org.traccar.web.JsonConverter;
 
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 public class AsyncSocket extends WebSocketAdapter implements ConnectionManager.UpdateListener {
 
     private static final String KEY_DEVICES = "devices";
     private static final String KEY_POSITIONS = "positions";
 
-    private Collection<Long> devices;
+    private long userId;
 
     public AsyncSocket(long userId) {
-        devices = Context.getPermissionsManager().getDevicePermissions(userId);
+        this.userId = userId;
     }
 
     @Override
     public void onWebSocketConnect(Session session) {
         super.onWebSocketConnect(session);
 
-        sendData(KEY_POSITIONS, Context.getConnectionManager().getInitialState(devices));
+        sendData(KEY_POSITIONS, Context.getConnectionManager().getInitialState(userId));
 
-        Context.getConnectionManager().addListener(devices, this);
+        Context.getConnectionManager().addListener(userId, this);
     }
 
     @Override
     public void onWebSocketClose(int statusCode, String reason) {
         super.onWebSocketClose(statusCode, reason);
 
-        Context.getConnectionManager().removeListener(devices, this);
+        Context.getConnectionManager().removeListener(userId, this);
     }
 
     @Override
     public void onUpdateDevice(Device device) {
-        sendData(KEY_DEVICES, Arrays.asList(device));
+        sendData(KEY_DEVICES, Collections.singletonList(device));
     }
 
     @Override
     public void onUpdatePosition(Position position) {
-        sendData(KEY_POSITIONS, Arrays.asList(position));
+        sendData(KEY_POSITIONS, Collections.singletonList(position));
     }
 
     private void sendData(String key, Collection<?> data) {

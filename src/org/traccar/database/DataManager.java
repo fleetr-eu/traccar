@@ -44,12 +44,10 @@ import org.traccar.helper.Log;
 import org.traccar.model.Device;
 import org.traccar.model.Group;
 import org.traccar.model.GroupPermission;
-import org.traccar.model.MiscFormatter;
 import org.traccar.model.DevicePermission;
 import org.traccar.model.Position;
 import org.traccar.model.Server;
 import org.traccar.model.User;
-import org.traccar.web.AsyncServlet;
 
 public class DataManager implements IdentityManager {
 
@@ -310,13 +308,6 @@ public class DataManager implements IdentityManager {
         }
     }
 
-    @Deprecated
-    public void removeUser(User user) throws SQLException {
-        QueryBuilder.create(dataSource, getQuery("database.deleteUser"))
-                .setObject(user)
-                .executeUpdate();
-    }
-
     public void removeUser(long userId) throws SQLException {
         QueryBuilder.create(dataSource, getQuery("database.deleteUser"))
                 .setLong("id", userId)
@@ -366,19 +357,11 @@ public class DataManager implements IdentityManager {
                 .executeUpdate();
     }
 
-    @Deprecated
-    public void removeDevice(Device device) throws SQLException {
-        QueryBuilder.create(dataSource, getQuery("database.deleteDevice"))
-                .setObject(device)
-                .executeUpdate();
-        AsyncServlet.sessionRefreshDevice(device.getId());
-    }
-
     public void removeDevice(long deviceId) throws SQLException {
         QueryBuilder.create(dataSource, getQuery("database.deleteDevice"))
                 .setLong("id", deviceId)
                 .executeUpdate();
-        AsyncServlet.sessionRefreshDevice(deviceId);
+        updateDeviceCache(true);
     }
 
     public void linkDevice(long userId, long deviceId) throws SQLException {
@@ -386,7 +369,6 @@ public class DataManager implements IdentityManager {
                 .setLong("userId", userId)
                 .setLong("deviceId", deviceId)
                 .executeUpdate();
-        AsyncServlet.sessionRefreshUser(userId);
     }
 
     public void unlinkDevice(long userId, long deviceId) throws SQLException {
@@ -394,7 +376,6 @@ public class DataManager implements IdentityManager {
                 .setLong("userId", userId)
                 .setLong("deviceId", deviceId)
                 .executeUpdate();
-        AsyncServlet.sessionRefreshUser(userId);
     }
 
     public Collection<Group> getAllGroups() throws SQLException {
@@ -456,11 +437,6 @@ public class DataManager implements IdentityManager {
         position.setId(QueryBuilder.create(dataSource, getQuery("database.insertPosition"), true)
                 .setDate("now", new Date())
                 .setObject(position)
-                .setDate("time", position.getFixTime()) // tmp
-                .setLong("device_id", position.getDeviceId()) // tmp
-                .setLong("power", 0) // tmp
-                .setString("extended_info", MiscFormatter.toXmlString(position.getAttributes())) // tmp
-                .setString("other", MiscFormatter.toXmlString(position.getAttributes())) // tmp
                 .executeUpdate());
     }
 
@@ -468,11 +444,6 @@ public class DataManager implements IdentityManager {
         QueryBuilder.create(dataSource, getQuery("database.updateLatestPosition"))
                 .setDate("now", new Date())
                 .setObject(position)
-                .setDate("time", position.getFixTime()) // tmp
-                .setLong("device_id", position.getDeviceId()) // tmp
-                .setLong("power", 0) // tmp
-                .setString("extended_info", MiscFormatter.toXmlString(position.getAttributes())) // tmp
-                .setString("other", MiscFormatter.toXmlString(position.getAttributes())) // tmp
                 .executeUpdate();
     }
 
