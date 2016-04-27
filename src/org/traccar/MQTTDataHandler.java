@@ -83,9 +83,9 @@ public class MQTTDataHandler extends BaseDataHandler {
 		logger.debug("Entering updateSate");
 		logger.debug("Attributes:" + position.getAttributes());
 		Integer newPowerState = (Integer) position.getAttributes().get("io239");
-		logger.debug("newPossitionState="+newPowerState+" - "+newPowerState.getClass().getCanonicalName());
+		if (newPowerState != null) logger.debug("newPossitionState="+newPowerState+" - "+newPowerState.getClass().getCanonicalName());
 		Integer previousPowerState = power.get(device.getUniqueId());
-		logger.debug("previousPowerState="+previousPowerState+" "+previousPowerState.getClass().getCanonicalName());
+		if (previousPowerState != null) logger.debug("previousPowerState="+previousPowerState+" "+previousPowerState.getClass().getCanonicalName());
 
 		String trip = trips.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : trips.get(device.getUniqueId());
 		String rest = rests.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : rests.get(device.getUniqueId());
