@@ -23,7 +23,8 @@ import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;	
+import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.glassfish.hk2.utilities.reflection.Logger;
 import org.traccar.model.Device;
 import org.traccar.model.Event;
 import org.traccar.model.MiscFormatter;
@@ -78,8 +79,13 @@ public class MQTTDataHandler extends BaseDataHandler {
 
 	private short updateState(Position position, Device device) {
 
+		Logger logger = Logger.getLogger();
+		logger.debug("Entering updateSate");
+		logger.debug("Attributes:" + position.getAttributes());
 		Integer newPowerState = (Integer) position.getAttributes().get("io239");
+		logger.debug("newPossitionState="+newPowerState+" - "+newPowerState.getClass().getCanonicalName());
 		Integer previousPowerState = power.get(device.getUniqueId());
+		logger.debug("previousPowerState="+previousPowerState+" "+previousPowerState.getClass().getCanonicalName());
 
 		String trip = trips.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : trips.get(device.getUniqueId());
 		String rest = rests.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : rests.get(device.getUniqueId());
@@ -88,6 +94,9 @@ public class MQTTDataHandler extends BaseDataHandler {
 		short io = 255;
 		int eventType = 30;
 		if (previousPowerState != newPowerState) {
+			logger.debug("Power State Change: new: "+newPowerState+" old:"+previousPowerState);
+
+
 			power.put(device.getUniqueId(), newPowerState);
 			eventType = 29;
 
