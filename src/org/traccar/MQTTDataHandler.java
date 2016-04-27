@@ -35,7 +35,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 	private static int qos = 2;
 	private static String topic = null;
 	private static MqttClient client = null;
-	private static Map<String, String> power = new HashMap<String, String>();
+	private static Map<String, Integer> power = new HashMap<String, Integer>();
 	private static Map<String, String> trips = new HashMap<String, String>();
 	private static Map<String, String> rests = new HashMap<String, String>();
 	private static Map<String, String> idles = new HashMap<String, String>();
@@ -78,8 +78,8 @@ public class MQTTDataHandler extends BaseDataHandler {
 
 	private short updateState(Position position, Device device) {
 
-		String newPowerState = (String) position.getAttributes().get("io239");
-		String previousPowerState = power.get(device.getUniqueId());
+		Integer newPowerState = (Integer) position.getAttributes().get("io239");
+		Integer previousPowerState = power.get(device.getUniqueId());
 
 		String trip = trips.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : trips.get(device.getUniqueId());
 		String rest = rests.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : rests.get(device.getUniqueId());
@@ -91,7 +91,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 			power.put(device.getUniqueId(), newPowerState);
 			eventType = 29;
 
-			if (newPowerState == "1") { // new trip
+			if (newPowerState == 1) { // new trip
 				trip = UUID.randomUUID().toString();
 				state = 1;
 				io = 255;
