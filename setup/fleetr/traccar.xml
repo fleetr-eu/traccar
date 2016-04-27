@@ -30,6 +30,7 @@
 		"course":##course##,
 		"state":"##state##",
 		"address":"##address##",
+		"io":"##io##",
 		"attributes":##attributes##
 	}
 	</entry>
