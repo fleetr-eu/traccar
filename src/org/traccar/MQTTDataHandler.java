@@ -87,14 +87,11 @@ public class MQTTDataHandler extends BaseDataHandler {
 			newPowerState = "on".equals(position.getAttributes().get("key")) ? 1 : 0;
 		}
 	
-		if (newPowerState != null) System.out.println("newPossitionState="+newPowerState+" - "+newPowerState.getClass().getCanonicalName());
 		Integer previousPowerState = power.get(device.getUniqueId());
-		if (previousPowerState != null) System.out.println("previousPowerState="+previousPowerState+" "+previousPowerState.getClass().getCanonicalName());
-
+		
 		String trip = trips.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : trips.get(device.getUniqueId());
 		String rest = rests.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : rests.get(device.getUniqueId());
 
-		short state = 1;
 		short io = 255;
 		int eventType = 30;
 		if (previousPowerState != newPowerState) {
@@ -121,7 +118,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 		position.set("trip", trip);
 		position.set("rest", rest);
 
-		if ((position.getSpeed() < minIdleSpeed) && (newPowerState==1)) {
+		if ((position.getSpeed() < minIdleSpeed) && (io == 255)) {
 			String idle = idles.get(device.getUniqueId());
 			if (idle == null) { // new idle
 				idle = UUID.randomUUID().toString();
