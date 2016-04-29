@@ -79,7 +79,14 @@ public class MQTTDataHandler extends BaseDataHandler {
 	
 	private void updatePositionAttributes(Position position, Device device) {
 
-		Integer newPowerState = (Integer) position.getAttributes().get("io239");
+		Integer newPowerState = null;
+		
+		if (position.getAttributes().get("io239") != null) {
+			newPowerState = (Integer) position.getAttributes().get("io239");
+		} else {
+			newPowerState = "on".equals(position.getAttributes().get("key")) ? 1 : 0;
+		}
+	
 		if (newPowerState != null) System.out.println("newPossitionState="+newPowerState+" - "+newPowerState.getClass().getCanonicalName());
 		Integer previousPowerState = power.get(device.getUniqueId());
 		if (previousPowerState != null) System.out.println("previousPowerState="+previousPowerState+" "+previousPowerState.getClass().getCanonicalName());
@@ -114,19 +121,15 @@ public class MQTTDataHandler extends BaseDataHandler {
 		position.set("trip", trip);
 		position.set("rest", rest);
 
-		if (position.getSpeed() < minIdleSpeed) {
+		if ((position.getSpeed() < minIdleSpeed) && (newPowerState==1)) {
 			String idle = idles.get(device.getUniqueId());
 			if (idle == null) { // new idle
 				idle = UUID.randomUUID().toString();
 				idles.put(device.getUniqueId(), idle);
 			}
 			position.set("idle", idle);
-			if (state == 1) {
-				position.set("idle", true);
-			} else {
-				position.set("idle", false);
-			}
 		} else {
+			position.set("idle", false);
 			idles.remove(device.getUniqueId());
 		}
 	}
