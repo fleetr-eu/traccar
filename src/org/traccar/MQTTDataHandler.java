@@ -40,6 +40,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 	private static Map<String, String> trips = new HashMap<String, String>();
 	private static Map<String, String> rests = new HashMap<String, String>();
 	private static Map<String, String> idles = new HashMap<String, String>();
+	private static Map<String, Long> idlingTime = new HashMap<String, Long>();
 	private static double minIdleSpeed = 1.0;
 
 	public MQTTDataHandler() {
@@ -123,6 +124,11 @@ public class MQTTDataHandler extends BaseDataHandler {
 			if (idle == null) { // new idle
 				idle = UUID.randomUUID().toString();
 				idles.put(device.getUniqueId(), idle);
+				idlingTime.put(device.getUniqueId(), System.currentTimeMillis());
+				position.set("idleTime", 0);
+			} else {
+				long idling = System.currentTimeMillis() - idlingTime.get(device.getUniqueId());
+				position.set("idleTime", idling);
 			}
 			position.set("idle", idle);
 		} else {
