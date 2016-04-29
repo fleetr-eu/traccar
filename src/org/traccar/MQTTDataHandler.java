@@ -50,7 +50,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 
 		Device device = Context.getIdentityManager().getDeviceById(position.getDeviceId());
 
-		short state = updateState(position, device);
+		updatePositionAttributes(position, device);
 
 		String template = Context.getConfig().getString("mqtt.template");
 
@@ -65,23 +65,20 @@ public class MQTTDataHandler extends BaseDataHandler {
 			.replace("##valid##", String.valueOf(position.getValid()))
 			.replace("##latitude##", String.valueOf(position.getLatitude()))
 			.replace("##longitude##", String.valueOf(position.getLongitude()))
+			.replace("##distance##", String.valueOf(position.getAttributes().get("io199")))
 			.replace("##altitude##", String.valueOf(position.getAltitude()))
 			.replace("##speed##", String.valueOf(position.getSpeed()))
 			.replace("##course##", String.valueOf(position.getCourse()))
-			.replace("##state##", String.valueOf(state))
+			.replace("##state##", String.valueOf(position.getAttributes().get("state")))
 			.replace("##io##", String.valueOf(position.getAttributes().get("io")))
 			.replace("##idle##", String.valueOf(position.getAttributes().get("idle")))
 			.replace("##address##", position.getAddress() != null ?  position.getAddress() : "")
 		 	.replace("##attributes##", MiscFormatter.toJsonString(position.getAttributes()));
-
 		return request;
 	}
+	
+	private void updatePositionAttributes(Position position, Device device) {
 
-	private short updateState(Position position, Device device) {
-
-		
-		System.out.println("Entering updateSate");
-		System.out.println("Attributes:" + position.getAttributes());
 		Integer newPowerState = (Integer) position.getAttributes().get("io239");
 		if (newPowerState != null) System.out.println("newPossitionState="+newPowerState+" - "+newPowerState.getClass().getCanonicalName());
 		Integer previousPowerState = power.get(device.getUniqueId());
@@ -94,19 +91,17 @@ public class MQTTDataHandler extends BaseDataHandler {
 		short io = 255;
 		int eventType = 30;
 		if (previousPowerState != newPowerState) {
-			System.out.println("Power State Change: new: "+newPowerState+" old:"+previousPowerState);
-
-
+			
 			power.put(device.getUniqueId(), newPowerState);
 			eventType = 29;
 
 			if (newPowerState == 1) { // new trip
 				trip = UUID.randomUUID().toString();
-				state = 1;
+				position.set("state", 1);
 				io = 255;
 			} else { // new rest
 				rest = UUID.randomUUID().toString();
-				state = 0;
+				position.set("state", 0);
 				io = 254;
 			}
 		}
@@ -128,12 +123,12 @@ public class MQTTDataHandler extends BaseDataHandler {
 			position.set("idle", idle);
 			if (state == 1) {
 				position.set("idle", true);
+			} else {
+				position.set("idle", false);
 			}
 		} else {
 			idles.remove(device.getUniqueId());
 		}
-
-		return state;
 	}
 
 	protected static MqttClient initMQTTClient() {

@@ -26,6 +26,7 @@
        "lat":##latitude##, 
        "lon":##longitude##, 
        "loc":[##longitude##,##latitude##],
+       "distance":##distance##,
        "altitude":##altitude##, 
        "speed":##speed##, 
        "course":##course##, 
