@@ -14,10 +14,9 @@
 	<entry key='mqtt.clientId'>fleetr_traccar</entry>
 	<entry key='mqtt.qos'>2</entry>
 	<entry key='mqtt.template'>
-	{ "name":"##name##}",
-		"deviceId": ##uniqueId##,
+	{   "name":"##name##}",
+		"deviceId": ##deviceId##,
 		"protocol":"##protocol##",
-		"type": ##eventType##,
 		"recordTime":{"$date":##deviceTime##},
 		"offset":##deviceTime##,
 		"fixTime": {"$date":##fixTime##},
@@ -28,10 +27,10 @@
 		"distance":##distance##,
 		"altitude":##altitude##,
 		"speed":##speed##,
+		"maxSpeed":##maxSpeed##,
 		"course":##course##,
 		"state":"##state##",
 		"address":"##address##",
-		"io":"##io##",
 		"attributes":##attributes##
 	}
 	</entry>

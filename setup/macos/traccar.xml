@@ -15,26 +15,25 @@
      <entry key='mqtt.topic'>/fleetr/traccar</entry>
      <entry key='mqtt.qos'>2</entry>
      <entry key='mqtt.template'>
-     { "name":"##name##}", 
-       "deviceId": ##uniqueId##, 
-       "protocol":"##protocol##",
-       "type": ##eventType##,
-       "recordTime":{"$date":##deviceTime##}, 
-       "offset":##deviceTime##,
-       "fixTime": {"$date":##fixTime##}, 
-       "valid":##valid##, 
-       "lat":##latitude##, 
-       "lon":##longitude##, 
-       "loc":[##longitude##,##latitude##],
-       "distance":##distance##,
-       "altitude":##altitude##, 
-       "speed":##speed##, 
-       "course":##course##, 
-       "state":"##state##",
-       "address":"##address##",
-       "io":"##io##",
-       "attributes":##attributes##
-     }
+     {  "name":"##name##}",
+		"deviceId": ##deviceId##,
+		"protocol":"##protocol##",
+		"recordTime":{"$date":##deviceTime##},
+		"offset":##deviceTime##,
+		"fixTime": {"$date":##fixTime##},
+		"valid":##valid##,
+		"lat":##latitude##,
+		"lon":##longitude##,
+		"loc":[##longitude##,##latitude##],
+		"distance":##distance##,
+		"altitude":##altitude##,
+		"speed":##speed##,
+		"maxSpeed":##maxSpeed##,
+		"course":##course##,
+		"state":"##state##",
+		"address":"##address##",
+		"attributes":##attributes##
+	 }
      </entry>
 
     <!-- SERVER CONFIG -->

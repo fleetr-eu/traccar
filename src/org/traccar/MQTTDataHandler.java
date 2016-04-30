@@ -24,23 +24,16 @@ import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
-import org.glassfish.hk2.utilities.reflection.Logger;
 import org.traccar.model.Device;
-import org.traccar.model.Event;
 import org.traccar.model.MiscFormatter;
 import org.traccar.model.Position;
 
 public class MQTTDataHandler extends BaseDataHandler {
 
-
 	private static int qos = 2;
 	private static String topic = null;
 	private static MqttClient client = null;
-	private static Map<String, Integer> power = new HashMap<String, Integer>();
-	private static Map<String, String> trips = new HashMap<String, String>();
-	private static Map<String, String> rests = new HashMap<String, String>();
-	private static Map<String, String> idles = new HashMap<String, String>();
-	private static Map<String, Long> idlingTime = new HashMap<String, Long>();
+	private static Map<String, Position> previousPositions = new HashMap<String, Position>();
 	private static double minIdleSpeed = 1.0;
 
 	public MQTTDataHandler() {
@@ -57,84 +50,111 @@ public class MQTTDataHandler extends BaseDataHandler {
 
 		String request = template
 			.replace("##name##", device.getName())
-			.replace("##uniqueId##", device.getUniqueId())
-			.replace("##deviceId##", String.valueOf(position.getDeviceId()))
+			.replace("##deviceId##", device.getUniqueId())
 			.replace("##protocol##", String.valueOf(position.getProtocol()))
-			.replace("##eventType##", String.valueOf(position.getAttributes().get("eventType")))
 			.replace("##deviceTime##", String.valueOf(position.getDeviceTime().getTime()))
 			.replace("##fixTime##", String.valueOf(position.getFixTime().getTime()))
 			.replace("##valid##", String.valueOf(position.getValid()))
 			.replace("##latitude##", String.valueOf(position.getLatitude()))
 			.replace("##longitude##", String.valueOf(position.getLongitude()))
-			.replace("##distance##", String.valueOf(position.getAttributes().get("io199")))
+			.replace("##distance##", position.getAttributes().get("io199") != null ? String.valueOf(position.getAttributes().get("io199")) : String.valueOf(position.getAttributes().get("distance")))
 			.replace("##altitude##", String.valueOf(position.getAltitude()))
 			.replace("##speed##", String.valueOf(position.getSpeed()))
+			.replace("##maxSpeed##", String.valueOf(position.getAttributes().get("maxSpeed")))
 			.replace("##course##", String.valueOf(position.getCourse()))
 			.replace("##state##", String.valueOf(position.getAttributes().get("state")))
-			.replace("##io##", String.valueOf(position.getAttributes().get("io")))
 			.replace("##idle##", String.valueOf(position.getAttributes().get("idle")))
 			.replace("##address##", position.getAddress() != null ?  position.getAddress() : "")
 		 	.replace("##attributes##", MiscFormatter.toJsonString(position.getAttributes()));
 		return request;
 	}
 	
-	private void updatePositionAttributes(Position position, Device device) {
-
-		Integer newPowerState = null;
-		
+	protected Integer getPowerState(Position position, Position previousPosition) {
 		if (position.getAttributes().get("io239") != null) {
-			newPowerState = (Integer) position.getAttributes().get("io239");
+			return Integer.valueOf((String)position.getAttributes().get("io239"));
 		} else {
-			newPowerState = "on".equals(position.getAttributes().get("key")) ? 1 : 0;
-		}
-	
-		Integer previousPowerState = power.get(device.getUniqueId());
-		
-		String trip = trips.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : trips.get(device.getUniqueId());
-		String rest = rests.get(device.getUniqueId()) == null ? UUID.randomUUID().toString() : rests.get(device.getUniqueId());
-
-		short io = 255;
-		int eventType = 30;
-		if (previousPowerState != newPowerState) {
-			
-			power.put(device.getUniqueId(), newPowerState);
-			eventType = 29;
-
-			if (newPowerState == 1) { // new trip
-				trip = UUID.randomUUID().toString();
-				position.set("state", 1);
-				io = 255;
-			} else { // new rest
-				rest = UUID.randomUUID().toString();
-				position.set("state", 0);
-				io = 254;
-			}
-		}
-		position.set("eventType", eventType);
-		position.set("io", io);
-
-		trips.put(device.getUniqueId(), trip);
-		rests.put(device.getUniqueId(), rest);
-
-		position.set("trip", trip);
-		position.set("rest", rest);
-
-		if ((position.getSpeed() < minIdleSpeed) && (io == 255)) {
-			String idle = idles.get(device.getUniqueId());
-			if (idle == null) { // new idle
-				idle = UUID.randomUUID().toString();
-				idles.put(device.getUniqueId(), idle);
-				idlingTime.put(device.getUniqueId(), System.currentTimeMillis());
-				position.set("idleTime", 0);
+			if (position.getAttributes().get("key") != null) {
+				return Integer.valueOf((String)position.getAttributes().get("key"));
 			} else {
-				long idling = System.currentTimeMillis() - idlingTime.get(device.getUniqueId());
-				position.set("idleTime", idling);
+				if (previousPosition.getAttributes().get("key") != null) {
+					return Integer.valueOf((String)previousPosition.getAttributes().get("key"));
+				} else {
+					if (position.getSpeed() > minIdleSpeed) {
+						return 1;
+					}
+				}
 			}
-			position.set("idle", idle);
-		} else {
-			position.set("idle", false);
-			idles.remove(device.getUniqueId());
+		} 
+		return 0;
+	}
+	
+	private void updatePositionAttributes(Position position, Device device) {
+	
+		Position previousPosition = previousPositions.get(device.getUniqueId());
+		
+		if (previousPosition == null) {
+			previousPosition = new Position();
 		}
+			
+		Integer newPowerState = getPowerState(position, previousPosition);
+		
+		if ((Integer)previousPosition.getAttributes().get("power") != newPowerState) { //key on/off state has changed
+			
+			if (newPowerState == 1) { // new trip
+				position.set("trip", UUID.randomUUID().toString());
+				position.set("maxSpeed", position.getSpeed());
+				position.set("state", "start");
+				updateIdle(position, previousPosition);
+			} else { //new rest
+				position.set("rest", UUID.randomUUID().toString());
+				position.set("maxSpeed", 0);
+				position.set("startRestTime", System.currentTimeMillis());
+				position.set("restTime", 0);
+				position.set("state", "stop");
+			}
+		} else {
+			position.set("state", (String) previousPosition.getAttributes().get("state"));
+			
+			if (previousPosition.getAttributes().get("trip") != null) {
+				position.set("trip", (String) previousPosition.getAttributes().get("trip"));
+			}
+			if (previousPosition.getAttributes().get("rest") != null) {
+				position.set("rest", (String) previousPosition.getAttributes().get("rest"));
+			}
+			
+			if (newPowerState == 1) { //device moving
+				if (position.getSpeed() > previousPosition.getSpeed()) {
+					position.set("maxSpeed", position.getSpeed());
+				} else {
+					position.set("maxSpeed", (Double) previousPosition.getAttributes().get("maxSpeed"));
+				}
+				updateIdle(position, previousPosition);
+				
+			} else { // device resting
+				if (previousPosition.getAttributes().get("startRestTime") != null) {
+					position.set("startRestTime", previousPosition.getDeviceTime().getTime());
+					position.set("restTime", position.getDeviceTime().getTime() - previousPosition.getDeviceTime().getTime());
+				} else {
+					position.set("startRestTime", position.getDeviceTime().getTime());
+					position.set("restTime", 0);
+				}
+			}
+		}
+		
+		position.set("power", newPowerState);
+		previousPositions.put(device.getUniqueId(), position);
+	}
+
+	private void updateIdle(Position position, Position previousPosition) {
+		if (position.getSpeed() < minIdleSpeed) { //device idle	
+			if (previousPosition.getAttributes().get("startIdleTime") != null) { 
+			   position.set("startIdleTime", (Long)previousPosition.getAttributes().get("startIdleTime"));
+			   position.set("idleTime", position.getDeviceTime().getTime() - previousPosition.getDeviceTime().getTime());
+			} else {
+				position.set("startIdleTime", position.getDeviceTime().getTime());
+				position.set("idleTime", 0);
+			}	
+		} 
 	}
 
 	protected static MqttClient initMQTTClient() {
