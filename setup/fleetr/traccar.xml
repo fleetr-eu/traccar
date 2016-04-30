@@ -22,7 +22,7 @@
 		"fixTime": {"$date":##fixTime##},
 		"valid":##valid##,
 		"lat":##latitude##,
-		"lon":##longitude##,
+		"lng":##longitude##,
 		"loc":[##longitude##,##latitude##],
 		"distance":##distance##,
 		"altitude":##altitude##,

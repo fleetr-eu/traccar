@@ -12,7 +12,7 @@
      <entry key='mqtt.user'>hkzbknix</entry>
      <entry key='mqtt.password'>CqGfuB61cbJ2</entry>
      <entry key='mqtt.clientId'>fleetr_traccar</entry>
-     <entry key='mqtt.topic'>/fleetr/traccar</entry>
+     <entry key='mqtt.topic'>/fleetr/traccar-records</entry>
      <entry key='mqtt.qos'>2</entry>
      <entry key='mqtt.template'>
      {  "name":"##name##}",
@@ -23,7 +23,7 @@
 		"fixTime": {"$date":##fixTime##},
 		"valid":##valid##,
 		"lat":##latitude##,
-		"lon":##longitude##,
+		"lng":##longitude##,
 		"loc":[##longitude##,##latitude##],
 		"distance":##distance##,
 		"altitude":##altitude##,
