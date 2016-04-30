@@ -120,7 +120,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 			} else { //new rest
 				position.set("rest", UUID.randomUUID().toString());
 				position.set("maxSpeed", 0);
-				position.set("startRestTime", System.currentTimeMillis());
+				position.set("startRestTime", position.getDeviceTime().getTime());
 				position.set("restTime", 0);
 				position.set("state", "stop");
 			}
