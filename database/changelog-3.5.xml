@@ -33,6 +33,10 @@
       <column name="groupid" type="INT" />
     </addColumn>
 
+    <addColumn tableName="devices">
+      <column name="phone" type="BOOLEAN" />
+    </addColumn>
+
     <dropColumn tableName="users" columnName="language" />
     <dropColumn tableName="server" columnName="language" />
 
