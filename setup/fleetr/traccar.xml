@@ -10,7 +10,7 @@
 
 	<entry key='extra.handlers'>org.traccar.MQTTDataHandler</entry>
 	<entry key='mqtt.url'>tcp://mqtt:1883</entry>
-	<entry key='mqtt.topic'>/fleetr/records</entry>
+	<entry key='mqtt.topic'>/fleetr/traccar-records</entry>
 	<entry key='mqtt.clientId'>fleetr_traccar</entry>
 	<entry key='mqtt.qos'>2</entry>
 	<entry key='mqtt.template'>
