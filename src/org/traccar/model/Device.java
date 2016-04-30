@@ -100,5 +100,15 @@ public class Device {
     public void setGroupId(long groupId) {
         this.groupId = groupId;
     }
+    
+    private boolean phone;
+
+    public boolean getPhone() {
+        return phone;
+    }
+
+    public void setPhone(boolean phone) {
+        this.phone = phone;
+    }
 
 }

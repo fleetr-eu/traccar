@@ -44,6 +44,12 @@ Ext.define('Traccar.view.DeviceDialog', {
             queryMode: 'local',
             displayField: 'name',
             valueField: 'id'
-        }]
+        }, {
+            xtype: 'checkbox',
+            name: 'phone',
+            fieldLabel: Strings.phone,
+            allowBlank: true
+        	}
+        ]
     }
 });

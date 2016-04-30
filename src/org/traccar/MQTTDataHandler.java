@@ -35,6 +35,8 @@ public class MQTTDataHandler extends BaseDataHandler {
 	private static MqttClient client = null;
 	private static Map<String, Position> previousPositions = new HashMap<String, Position>();
 	private static double minIdleSpeed = 1.0;
+	private static double maxIdleTime = 90000;
+	
 
 	public MQTTDataHandler() {
 		initMQTTClient();
@@ -45,6 +47,16 @@ public class MQTTDataHandler extends BaseDataHandler {
 		Device device = Context.getIdentityManager().getDeviceById(position.getDeviceId());
 
 		updatePositionAttributes(position, device);
+		if (device.getPhone() && (position.getAttributes().get("idleTime") != null)) {
+			System.out.println("Idle="+(Long)position.getAttributes().get("idleTime"));
+			if ((Long)position.getAttributes().get("idleTime") > maxIdleTime) {
+				position.set("key", "0");
+				position.getAttributes().remove("trip");
+				position.getAttributes().remove("startIdleTime");
+				position.getAttributes().remove("idleTime");
+				updatePositionAttributes(position, device);
+			}
+		}
 
 		String template = Context.getConfig().getString("mqtt.template");
 
@@ -132,11 +144,13 @@ public class MQTTDataHandler extends BaseDataHandler {
 				
 			} else { // device resting
 				if (previousPosition.getAttributes().get("startRestTime") != null) {
-					position.set("startRestTime", previousPosition.getDeviceTime().getTime());
-					position.set("restTime", position.getDeviceTime().getTime() - previousPosition.getDeviceTime().getTime());
+					long startRestTime = (Long)previousPosition.getAttributes().get("startRestTime");
+					long restTime = position.getDeviceTime().getTime() - startRestTime;
+					position.set("startRestTime", startRestTime);
+					position.set("restTime", restTime);
 				} else {
-					position.set("startRestTime", position.getDeviceTime().getTime());
-					position.set("restTime", 0);
+					position.set("startRestTime", (long)position.getDeviceTime().getTime());
+					position.set("restTime", (long) 0);
 				}
 			}
 		}
@@ -148,11 +162,13 @@ public class MQTTDataHandler extends BaseDataHandler {
 	private void updateIdle(Position position, Position previousPosition) {
 		if (position.getSpeed() < minIdleSpeed) { //device idle	
 			if (previousPosition.getAttributes().get("startIdleTime") != null) { 
-			   position.set("startIdleTime", (Long)previousPosition.getAttributes().get("startIdleTime"));
-			   position.set("idleTime", position.getDeviceTime().getTime() - previousPosition.getDeviceTime().getTime());
+			   long startIdleTime = (Long)previousPosition.getAttributes().get("startIdleTime");
+			   long idleTime = position.getDeviceTime().getTime() - startIdleTime;
+			   position.set("startIdleTime", startIdleTime);
+			   position.set("idleTime", idleTime);
 			} else {
-				position.set("startIdleTime", position.getDeviceTime().getTime());
-				position.set("idleTime", 0);
+				position.set("startIdleTime", (long) position.getDeviceTime().getTime());
+				position.set("idleTime", (long) 0);
 			}	
 		} 
 	}
