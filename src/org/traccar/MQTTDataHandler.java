@@ -103,7 +103,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 		position.set("power", newPowerState);	
 		previousPositions.put(device.getUniqueId(), position);
 		String status = newPowerState == 1 ? Device.STATUS_ONLINE : Device.STATUS_OFFLINE;
-		device.setStatus(status);
+		Context.getConnectionManager().updateDevice(device.getId(), status, position.getDeviceTime());
 	}
 
 	private void initRest(Position position) {
