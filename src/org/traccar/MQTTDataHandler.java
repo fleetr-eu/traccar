@@ -15,7 +15,6 @@
  */
 package org.traccar;
 
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -52,7 +51,6 @@ public class MQTTDataHandler extends BaseDataHandler {
 			return Integer.valueOf(position.getAttributes().get("key").toString());
 		} else {
 			if (previousPosition.getAttributes().get("power") != null) {
-				updateIdle(position, previousPosition);
 				if (position.getAttributes().get("idleTime") != null) {
 					if ((Long)position.getAttributes().get("idleTime") > maxIdleTime) {
 						return 0;
@@ -91,7 +89,8 @@ public class MQTTDataHandler extends BaseDataHandler {
 			position.set("state", (String) previousPosition.getAttributes().get("state"));
 			
 			if (newPowerState == 1) { //device moving
-				updateMove(position, previousPosition);				
+				updateMove(position, previousPosition);
+				updateIdle(position, previousPosition);
 			} else { // device resting
 				updateRest(position, previousPosition);
 			}
