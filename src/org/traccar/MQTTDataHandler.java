@@ -49,18 +49,25 @@ public class MQTTDataHandler extends BaseDataHandler {
 		
 		if (position.getAttributes().get("key") != null) {
 			return Integer.valueOf(position.getAttributes().get("key").toString());
-		} else {
-			if (previousPosition.getAttributes().get("power") != null) {
+		} 
+			
+		if (previousPosition.getAttributes().get("power") != null) {
+			int power = (Integer)previousPosition.getAttributes().get("power");
+			if (power == 1) {
+				updateIdle(position, previousPosition);
 				if (position.getAttributes().get("idleTime") != null) {
 					if ((Long)position.getAttributes().get("idleTime") > maxIdleTime) {
 						return 0;
 					}
 				}
-				return (Integer)previousPosition.getAttributes().get("power");
+				return power;
 			} else {
-				return 1;
+				if (position.getSpeed() > minIdleSpeed) {
+					return 1;
+				}
 			}
 		}
+		return 0;
 		
 	}
 	
