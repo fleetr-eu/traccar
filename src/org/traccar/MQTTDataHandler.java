@@ -47,26 +47,23 @@ public class MQTTDataHandler extends BaseDataHandler {
 		if (position.getAttributes().get("io239") != null) {
 			return (Integer)position.getAttributes().get("io239");
 		} 
-		int power = 0;
+		
 		if (position.getAttributes().get("key") != null) {
-			power = Integer.valueOf((String)position.getAttributes().get("key"));
+			return Integer.valueOf(position.getAttributes().get("key").toString());
 		} else {
 			if (previousPosition.getAttributes().get("power") != null) {
-				power = Integer.valueOf((String)previousPosition.getAttributes().get("power"));
+				updateIdle(position, previousPosition);
+				if (position.getAttributes().get("idleTime") != null) {
+					if ((Long)position.getAttributes().get("idleTime") > maxIdleTime) {
+						return 0;
+					}
+				}
+				return Integer.valueOf((String)previousPosition.getAttributes().get("power"));
 			} else {
-				power = 1;
+				return 1;
 			}
 		}
 		
-		if (power == 1) {
-			updateIdle(position, previousPosition);
-			if (position.getAttributes().get("idleTime") != null) {
-				if ((Long)position.getAttributes().get("idleTime") > maxIdleTime) {
-					power = 0;
-				}
-			}
-		}
-		return power;
 	}
 	
 	private void updatePositionAttributes(Position position, Device device) {
