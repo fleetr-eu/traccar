@@ -156,6 +156,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 		}
 		
 		position.set("power", newPowerState);
+		device.setStatus(newPowerState == 1 ? Device.STATUS_ONLINE : Device.STATUS_OFFLINE);
 		previousPositions.put(device.getUniqueId(), position);
 	}
 

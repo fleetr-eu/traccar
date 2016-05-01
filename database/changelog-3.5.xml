@@ -34,9 +34,7 @@
     </addColumn>
 
     <addColumn tableName="devices">
-      <column name="phone" type="BOOLEAN" defaultValueBoolean="false" >
-     	 <constraints nullable="false" />
-      </column>	 
+      <column name="phone" type="BOOLEAN" defaultValueBoolean="false" />
     </addColumn>
 
     <dropColumn tableName="users" columnName="language" />

@@ -45,10 +45,10 @@ Ext.define('Traccar.view.DeviceDialog', {
             displayField: 'name',
             valueField: 'id'
         }, {
-            xtype: 'checkbox',
+            xtype: 'checkboxfield',
             name: 'phone',
             fieldLabel: Strings.phone,
-            allowBlank: true
+            allowBlank: false
         	}
         ]
     }
