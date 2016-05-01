@@ -83,7 +83,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 	
 	protected Integer getPowerState(Position position, Position previousPosition) {
 		if (position.getAttributes().get("io239") != null) {
-			return Integer.valueOf((String)position.getAttributes().get("io239"));
+			return (Integer)position.getAttributes().get("io239");
 		} else {
 			if (position.getAttributes().get("key") != null) {
 				return Integer.valueOf((String)position.getAttributes().get("key"));
