@@ -15,6 +15,7 @@
  */
 package org.traccar;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -156,7 +157,8 @@ public class MQTTDataHandler extends BaseDataHandler {
 		}
 		
 		position.set("power", newPowerState);
-		device.setStatus(newPowerState == 1 ? Device.STATUS_ONLINE : Device.STATUS_OFFLINE);
+		String status = newPowerState == 1 ? Device.STATUS_ONLINE : Device.STATUS_OFFLINE;
+		Context.getConnectionManager().updateDevice(device.getId(), status, position.getDeviceTime());		
 		previousPositions.put(device.getUniqueId(), position);
 	}
 
