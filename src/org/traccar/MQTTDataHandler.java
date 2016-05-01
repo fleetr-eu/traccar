@@ -42,26 +42,29 @@ public class MQTTDataHandler extends BaseDataHandler {
 	public MQTTDataHandler() {
 		initMQTTClient();
 	}
-
-	
 	
 	protected Integer getPowerState(Position position, Position previousPosition) {
 		if (position.getAttributes().get("io239") != null) {
 			return (Integer)position.getAttributes().get("io239");
+		} 
+		int power = 0;
+		if (position.getAttributes().get("key") != null) {
+			power = Integer.valueOf((String)position.getAttributes().get("key"));
 		} else {
-			if (position.getAttributes().get("key") != null) {
-				return Integer.valueOf((String)position.getAttributes().get("key"));
-			} else {
-				if (previousPosition.getAttributes().get("key") != null) {
-					return Integer.valueOf((String)previousPosition.getAttributes().get("key"));
-				} else {
-					if (position.getSpeed() > minIdleSpeed) {
-						return 1;
-					}
+			if (previousPosition.getAttributes().get("power") != null) {
+				power = Integer.valueOf((String)previousPosition.getAttributes().get("power"));
+			} 
+		}
+		
+		if (power == 1) {
+			updateIdle(position, previousPosition);
+			if (position.getAttributes().get("idleTime") != null) {
+				if ((Long)position.getAttributes().get("idleTime") > maxIdleTime) {
+					power = 0;
 				}
 			}
-		} 
-		return 0;
+		}
+		return power;
 	}
 	
 	private void updatePositionAttributes(Position position, Device device) {
@@ -89,8 +92,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 			position.set("state", (String) previousPosition.getAttributes().get("state"));
 			
 			if (newPowerState == 1) { //device moving
-				updateMove(position, previousPosition);
-				updateIdle(position, previousPosition);				
+				updateMove(position, previousPosition);				
 			} else { // device resting
 				updateRest(position, previousPosition);
 			}
@@ -187,16 +189,6 @@ public class MQTTDataHandler extends BaseDataHandler {
 		Device device = Context.getIdentityManager().getDeviceById(position.getDeviceId());
 
 		updatePositionAttributes(position, device);
-		if (device.getPhone() && (position.getAttributes().get("idleTime") != null)) {
-			System.out.println("Idle="+(Long)position.getAttributes().get("idleTime"));
-			if ((Long)position.getAttributes().get("idleTime") > maxIdleTime) {
-				position.set("key", "0");
-				position.getAttributes().remove("trip");
-				position.getAttributes().remove("startIdleTime");
-				position.getAttributes().remove("idleTime");
-				updatePositionAttributes(position, device);
-			}
-		}
 
 		String template = Context.getConfig().getString("mqtt.template");
 
