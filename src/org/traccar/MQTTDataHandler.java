@@ -53,7 +53,9 @@ public class MQTTDataHandler extends BaseDataHandler {
 		} else {
 			if (previousPosition.getAttributes().get("power") != null) {
 				power = Integer.valueOf((String)previousPosition.getAttributes().get("power"));
-			} 
+			} else {
+				power = 1;
+			}
 		}
 		
 		if (power == 1) {
