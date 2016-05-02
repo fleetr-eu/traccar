@@ -124,7 +124,7 @@
       </column>
       <column name="speed" type="FLOAT">
         <constraints nullable="false" />
-      </column>
+      </column> 
       <column name="course" type="FLOAT">
         <constraints nullable="false" />
       </column>
