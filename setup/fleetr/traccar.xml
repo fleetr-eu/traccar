@@ -197,6 +197,10 @@
     <entry key='database.selectLatestPositions'>
         SELECT * FROM positions WHERE id IN (SELECT positionId FROM devices);
     </entry>
+    
+    <entry key='database.selectLatestPosition'>
+        SELECT * FROM positions WHERE id = :positionId;
+    </entry>
 
     <entry key='database.updateLatestPosition'>
         UPDATE devices SET positionId = :id WHERE id = :deviceId;
