@@ -25,6 +25,7 @@
 		"lng":##longitude##,
 		"loc":[##longitude##,##latitude##],
 		"distance":##distance##,
+		"odometer":##odometer##,
 		"altitude":##altitude##,
 		"speed":##speed##,
 		"maxSpeed":##maxSpeed##,

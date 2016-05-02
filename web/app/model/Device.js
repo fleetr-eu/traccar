@@ -18,7 +18,8 @@ Ext.define('Traccar.model.Device', {
     extend: 'Ext.data.Model',
     identifier: 'negative',
 
-    fields: [{
+    fields: [
+    {
         name: 'id',
         type: 'int'
     }, {
@@ -39,7 +40,9 @@ Ext.define('Traccar.model.Device', {
         type: 'int'
     },
        {
-        name: 'phone',
-        type: 'boolean'
-    }]
+        name: 'odometer',
+        type: 'number'
+    }
+    
+    ]
 });

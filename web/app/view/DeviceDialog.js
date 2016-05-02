@@ -45,9 +45,9 @@ Ext.define('Traccar.view.DeviceDialog', {
             displayField: 'name',
             valueField: 'id'
         }, {
-            xtype: 'checkboxfield',
-            name: 'phone',
-            fieldLabel: Strings.phone,
+            xtype: 'textfield',
+            name: 'odometer',
+            fieldLabel: Strings.odometer,
             allowBlank: false
         	}
         ]

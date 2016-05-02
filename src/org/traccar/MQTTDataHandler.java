@@ -15,8 +15,6 @@
  */
 package org.traccar;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -28,101 +26,115 @@ import org.traccar.model.Device;
 import org.traccar.model.MiscFormatter;
 import org.traccar.model.Position;
 
-public class MQTTDataHandler extends BaseDataHandler {
+public class MQTTDataHandler extends OdometerHandler {
 
 	private static int qos = 2;
 	private static String topic = null;
 	private static MqttClient client = null;
-	private static Map<String, Position> previousPositions = new HashMap<String, Position>();
+	//private static Map<String, Position> previousPositions = new HashMap<String, Position>();
 	private static double minIdleSpeed = 1.0;
 	private static double maxIdleTime = 90000;
 	
-
 	public MQTTDataHandler() {
 		initMQTTClient();
 	}
 	
-	protected Integer getPowerState(Position position, Position previousPosition) {
+	protected Integer getPreviousPowerState() {
+		if (previousPosition == null) {
+			return null;
+		} 
+		return ((Long)previousPosition.getAttributes().get("power")).intValue();
+	}	
+	
+	protected Integer getPowerState() {
 		if (position.getAttributes().get("io239") != null) {
 			return (Integer)position.getAttributes().get("io239");
 		} 
-		
 		if (position.getAttributes().get("key") != null) {
 			return Integer.valueOf(position.getAttributes().get("key").toString());
-		} 
-			
-		if (previousPosition.getAttributes().get("power") != null) {
-			int power = (Integer)previousPosition.getAttributes().get("power");
-			if (power == 1) {
-				updateIdle(position, previousPosition);
-				if (position.getAttributes().get("idleTime") != null) {
-					if ((Long)position.getAttributes().get("idleTime") > maxIdleTime) {
-						return 0;
-					}
-				}
-				return power;
+		}
+		
+		Integer previousPowerState = getPreviousPowerState();
+		if (previousPowerState == null) {
+			if (position.getSpeed() > minIdleSpeed) {
+				return 1;
 			} else {
-				if (position.getSpeed() > minIdleSpeed) {
-					return 1;
+				return 0;
+			}
+		}
+		
+		if (previousPowerState.equals(1)) {
+			if (position.getSpeed() < minIdleSpeed) { //device idle
+				idle();
+			}
+			if (position.getAttributes().get("idleTime") != null) {
+				if ((Long)position.getAttributes().get("idleTime") > maxIdleTime) {
+					position.getAttributes().remove("startIdleTime");
+					position.getAttributes().remove("idleTime");
+					return 0;
 				}
 			}
-		}
-		return 0;
-		
-	}
-	
-	private void updatePositionAttributes(Position position, Device device) {
-	
-		Position previousPosition = previousPositions.get(device.getUniqueId());
-		
-		if (previousPosition == null) {
-			previousPosition = new Position();
-		}
-			
-		Integer newPowerState = getPowerState(position, previousPosition);
-		
-		if ((Integer)previousPosition.getAttributes().get("power") != newPowerState) { //key on/off state has changed
-			
-			if (newPowerState == 1) { // new trip
-				initMove(position);
-			} else { //new rest
-				initRest(position);
-			}
-			
 		} else {
-			position.set("state", (String) previousPosition.getAttributes().get("state"));
+			if (position.getSpeed() > minIdleSpeed) {
+				return 1;
+			}
+		}
+		position.getAttributes().remove("startIdleTime");
+		position.getAttributes().remove("idleTime");
+		return 0;
+	}	
+	
+	private void updatePosition() {
 			
-			if (newPowerState == 1) { //device moving
-				updateMove(position, previousPosition);
-				updateIdle(position, previousPosition);
-			} else { // device resting
-				updateRest(position, previousPosition);
+		Integer newPowerState = getPowerState();
+		Integer previousPowerState = getPreviousPowerState();
+		
+		if (newPowerState.equals(previousPowerState)) {
+			if (newPowerState.equals(1)) { 
+				move();
+			} else {
+				rest();
+			}
+		} else {
+			if (newPowerState.equals(1)) { 
+				start(); 
+			} else {
+				stop();
 			}
 		}
 		
 		position.set("power", newPowerState);	
-		previousPositions.put(device.getUniqueId(), position);
-		String status = newPowerState == 1 ? Device.STATUS_ONLINE : Device.STATUS_OFFLINE;
-		Context.getConnectionManager().updateDevice(device.getId(), status, position.getDeviceTime());
+		
+//		String status = newPowerState == 1 ? Device.STATUS_ONLINE : Device.STATUS_OFFLINE;
+//		Context.getConnectionManager().updateDevice(device.getId(), status, position.getDeviceTime());
 	}
 
-	private void initRest(Position position) {
+	private void stop() {
+		position.set("state", "stop");
 		position.set("rest", UUID.randomUUID().toString());
-		position.set("maxSpeed", 0);
 		position.set("startRestTime", position.getDeviceTime().getTime());
 		position.set("restTime", 0);
-		position.set("state", "stop");
+		position.set("maxSpeed", 0);
+		updateOdometer(device, position);
 	}
 
-	private void initMove(Position position) {
-		position.set("trip", UUID.randomUUID().toString());
-		position.set("maxSpeed", position.getSpeed());
+	private void start() {
 		position.set("state", "start");
+		position.set("trip", UUID.randomUUID().toString());
+		position.set("startTripTime", position.getDeviceTime().getTime());
+		position.set("tripTime", position.getDeviceTime().getTime());
+		position.set("maxSpeed", position.getSpeed());
+		updateOdometer(device, position);
 	}
 
-	private void updateMove(Position position, Position previousPosition) {
+	private void move() {
+		position.set("state", "start");
+	
 		if (previousPosition.getAttributes().get("trip") != null) {
+			updateOdometer(device, position);
 			position.set("trip", (String) previousPosition.getAttributes().get("trip"));
+		} else {
+			start();
 		}
 		
 		double maxSpeed = previousPosition.getAttributes().get("maxSpeed") != null ? (double) previousPosition.getAttributes().get("maxSpeed") : 0;
@@ -131,23 +143,25 @@ public class MQTTDataHandler extends BaseDataHandler {
 		} else {
 			position.set("maxSpeed", maxSpeed);
 		}
+		if (position.getSpeed() < minIdleSpeed) { //device idle	
+			idle();
+		}
 	}
 
-	private void updateIdle(Position position, Position previousPosition) {
-		if (position.getSpeed() < minIdleSpeed) { //device idle	
-			if (previousPosition.getAttributes().get("startIdleTime") != null) { 
-			   long startIdleTime = (long)previousPosition.getAttributes().get("startIdleTime");
-			   long idleTime = position.getDeviceTime().getTime() - startIdleTime;
-			   position.set("startIdleTime", startIdleTime);
-			   position.set("idleTime", idleTime);
-			} else {
-				position.set("startIdleTime", (long) position.getDeviceTime().getTime());
-				position.set("idleTime", (long) 0);
-			}	
-		} 
+	private void idle() {
+		if (previousPosition.getAttributes().get("startIdleTime") != null) { 
+		   long startIdleTime = (long)previousPosition.getAttributes().get("startIdleTime");
+		   long idleTime = position.getDeviceTime().getTime() - startIdleTime;
+		   position.set("startIdleTime", startIdleTime);
+		   position.set("idleTime", idleTime);
+		} else {
+			position.set("startIdleTime", (long) position.getDeviceTime().getTime());
+			position.set("idleTime", (long) 0);
+		}	
 	}
 	
-	private void updateRest(Position position, Position previousPosition) {
+	private void rest() {
+		position.set("state", "stop");
 		if (previousPosition.getAttributes().get("rest") != null) {
 			position.set("rest", (String) previousPosition.getAttributes().get("rest"));
 		}
@@ -157,8 +171,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 			position.set("startRestTime", startRestTime);
 			position.set("restTime", restTime);
 		} else {
-			position.set("startRestTime", (long)position.getDeviceTime().getTime());
-			position.set("restTime", (long) 0);
+			rest();
 		} 
 	}
 
@@ -192,8 +205,6 @@ public class MQTTDataHandler extends BaseDataHandler {
 
 		Device device = Context.getIdentityManager().getDeviceById(position.getDeviceId());
 
-		updatePositionAttributes(position, device);
-
 		String template = Context.getConfig().getString("mqtt.template");
 
 		String request = template
@@ -205,7 +216,8 @@ public class MQTTDataHandler extends BaseDataHandler {
 			.replace("##valid##", String.valueOf(position.getValid()))
 			.replace("##latitude##", String.valueOf(position.getLatitude()))
 			.replace("##longitude##", String.valueOf(position.getLongitude()))
-			.replace("##distance##", position.getAttributes().get("io199") != null ? String.valueOf(position.getAttributes().get("io199")) : String.valueOf(position.getAttributes().get("distance")))
+			.replace("##distance##", String.valueOf(getDistance(position)))
+			.replace("##odometer##", String.valueOf(device.getOdometer()))
 			.replace("##altitude##", String.valueOf(position.getAltitude()))
 			.replace("##speed##", String.valueOf(position.getSpeed()))
 			.replace("##maxSpeed##", String.valueOf(position.getAttributes().get("maxSpeed")))
@@ -219,7 +231,10 @@ public class MQTTDataHandler extends BaseDataHandler {
 	
 	@Override
 	protected Position handlePosition(Position position) {
-
+		super.handlePosition(position);
+		
+		updatePosition();
+		
 		String content = formatRequest(position);
 
 		System.out.println("Publishing to topic="+topic+": "+content);
@@ -231,6 +246,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 		} catch (MqttException e) {
 			e.printStackTrace();
 		}
+		
 		return position;
 	}
 

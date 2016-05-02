@@ -101,14 +101,14 @@ public class Device {
         this.groupId = groupId;
     }
     
-    private boolean phone;
+    private long odometer;
 
-    public boolean getPhone() {
-        return phone;
+    public long getOdometer() {
+        return odometer;
     }
 
-    public void setPhone(boolean phone) {
-        this.phone = phone;
+    public void setOdometer(long odometer) {
+        this.odometer = odometer;
     }
 
 }
