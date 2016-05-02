@@ -61,8 +61,9 @@ public class OdometerHandler extends BaseDataHandler {
                 position.getLatitude(), position.getLongitude(),
                 previousPosition.getLatitude(), previousPosition.getLongitude());
 			position.set(Event.KEY_DISTANCE, distance);
-		}   
-		
+		} else {  
+			position.set(Event.KEY_DISTANCE, 0);
+		}
 		return Double.valueOf(String.valueOf(position.getAttributes().get(Event.KEY_DISTANCE))).intValue();
 	}
 	
