@@ -31,10 +31,6 @@
 
     <addColumn tableName="devices">
       <column name="groupid" type="INT" />
-      <column name="phone" type="BOOLEAN" defaultValueBoolean="false">
-        <constraints nullable="false" />
-      </column>
-      <column name="odometer" type="BIGINT" defaultValueNumeric="0" />
     </addColumn>
 
     <dropColumn tableName="users" columnName="language" />
