@@ -31,9 +31,6 @@
 
     <addColumn tableName="devices">
       <column name="groupid" type="INT" />
-    </addColumn>
-
-    <addColumn tableName="devices">
       <column name="phone" type="BOOLEAN" defaultValueBoolean="false" />
     </addColumn>
 
