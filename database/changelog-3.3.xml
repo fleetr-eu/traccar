@@ -73,7 +73,6 @@
       <column name="status" type="VARCHAR(128)" />
       <column name="lastupdate" type="TIMESTAMP" />
       <column name="positionid" type="INT" />
-      <column name="phone" type="BOOLEAN" defaultValueBoolean="false" />
       <column name="odometer" type="BIGINT" defaultValueNumeric="0" />
     </createTable>
 
