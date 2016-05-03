@@ -72,16 +72,19 @@ public class MQTTDataHandler extends OdometerHandler {
 					position.getAttributes().remove("startIdleTime");
 					position.getAttributes().remove("idleTime");
 					return 0;
+				} else {
+					return 1;
 				}
 			}
 		} else {
 			if (position.getSpeed() > minIdleSpeed) {
 				return 1;
+			} else {
+				position.getAttributes().remove("startIdleTime");
+				position.getAttributes().remove("idleTime");
+				return 0;
 			}
 		}
-		position.getAttributes().remove("startIdleTime");
-		position.getAttributes().remove("idleTime");
-		return 0;
 	}	
 	
 	private void updatePosition() {
