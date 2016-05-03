@@ -59,9 +59,9 @@ public class MQTTDataHandler extends OdometerHandler {
 			if (position.getSpeed() > minIdleSpeed) {
 				return 1;
 			} else {
-				return 0;
+				return 0; 
 			}
-		}
+		} 
 		
 		if (previousPowerState.equals(1)) {
 			if (position.getSpeed() < minIdleSpeed) { //device idle
