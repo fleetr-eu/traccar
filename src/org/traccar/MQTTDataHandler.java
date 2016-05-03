@@ -43,7 +43,7 @@ public class MQTTDataHandler extends OdometerHandler {
 		if (previousPosition == null) {
 			return null;
 		} 
-		return ((Long)previousPosition.getAttributes().get("power")).intValue();
+		return Double.valueOf(String.valueOf(previousPosition.getAttributes().get("power"))).intValue();
 	}	
 	
 	protected Integer getPowerState() {
@@ -132,12 +132,12 @@ public class MQTTDataHandler extends OdometerHandler {
 	
 		if (previousPosition.getAttributes().get("trip") != null) {
 			updateOdometer(device, position);
-			position.set("trip", (String) previousPosition.getAttributes().get("trip"));
+			position.set("trip", String.valueOf(previousPosition.getAttributes().get("trip")));
 		} else {
 			start();
 		}
 		
-		double maxSpeed = previousPosition.getAttributes().get("maxSpeed") != null ? (double) previousPosition.getAttributes().get("maxSpeed") : 0;
+		double maxSpeed = previousPosition.getAttributes().get("maxSpeed") != null ? Double.valueOf(String.valueOf(previousPosition.getAttributes().get("maxSpeed"))) : 0;
 		if (position.getSpeed() > maxSpeed) {
 			position.set("maxSpeed", position.getSpeed());
 		} else {
@@ -163,7 +163,7 @@ public class MQTTDataHandler extends OdometerHandler {
 	private void rest() {
 		position.set("state", "stop");
 		if (previousPosition.getAttributes().get("rest") != null) {
-			position.set("rest", (String) previousPosition.getAttributes().get("rest"));
+			position.set("rest", String.valueOf(previousPosition.getAttributes().get("rest")));
 		}
 		if (previousPosition.getAttributes().get("startRestTime") != null) {
 			long startRestTime = (long)previousPosition.getAttributes().get("startRestTime");

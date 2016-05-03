@@ -50,7 +50,7 @@ public class OdometerHandler extends BaseDataHandler {
 	protected int getDistance(Position position) {
 		if (position.getAttributes().get("io199") != null) {
 			position.set(Event.KEY_DISTANCE, (Double.valueOf(position.getAttributes().get("io199").toString()).intValue()));
-			return (int)position.getAttributes().get("io199");
+			return Double.valueOf(String.valueOf(position.getAttributes().get("io199"))).intValue();
 		}
 		if (position.getAttributes().get(Event.KEY_DISTANCE) != null) {
 			return Double.valueOf(position.getAttributes().get(Event.KEY_DISTANCE).toString()).intValue();
