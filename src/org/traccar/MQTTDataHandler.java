@@ -122,7 +122,7 @@ public class MQTTDataHandler extends OdometerHandler {
 		position.set("state", "start");
 		position.set("trip", UUID.randomUUID().toString());
 		position.set("startTripTime", position.getDeviceTime().getTime());
-		position.set("tripTime", position.getDeviceTime().getTime());
+		position.set("tripTime", 0);
 		position.set("maxSpeed", position.getSpeed());
 		updateOdometer(device, position);
 	}
@@ -133,6 +133,7 @@ public class MQTTDataHandler extends OdometerHandler {
 		if (previousPosition.getAttributes().get("trip") != null) {
 			updateOdometer(device, position);
 			position.set("trip", String.valueOf(previousPosition.getAttributes().get("trip")));
+			tripTime();
 		} else {
 			start();
 		}
@@ -157,6 +158,18 @@ public class MQTTDataHandler extends OdometerHandler {
 		} else {
 			position.set("startIdleTime", (long) position.getDeviceTime().getTime());
 			position.set("idleTime", (long) 0);
+		}	
+	}
+	
+	private void tripTime() {
+		if (previousPosition.getAttributes().get("startTripTime") != null) { 
+		   long startIdleTime = (long)previousPosition.getAttributes().get("startTripTime");
+		   long idleTime = position.getDeviceTime().getTime() - startIdleTime;
+		   position.set("startTripTime", startIdleTime);
+		   position.set("tripTime", idleTime);
+		} else {
+			position.set("startTripTime", (long) position.getDeviceTime().getTime());
+			position.set("tripTime", (long) 0);
 		}	
 	}
 	
