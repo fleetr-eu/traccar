@@ -48,10 +48,10 @@ public class MQTTDataHandler extends OdometerHandler {
 	
 	protected Integer getPowerState() {
 		if (position.getAttributes().get("io239") != null) {
-			return (Integer)position.getAttributes().get("io239");
+			return Double.valueOf(position.getAttributes().get("io239").toString()).intValue();
 		} 
 		if (position.getAttributes().get("key") != null) {
-			return Integer.valueOf(position.getAttributes().get("key").toString());
+			return Double.valueOf(position.getAttributes().get("key").toString()).intValue();
 		}
 		
 		Integer previousPowerState = getPreviousPowerState();
