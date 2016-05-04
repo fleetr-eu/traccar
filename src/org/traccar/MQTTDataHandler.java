@@ -40,14 +40,14 @@ public class MQTTDataHandler extends OdometerHandler {
 		initMQTTClient();
 	}
 	
-	protected boolean powerChange(Integer key) {
-		Integer previousKey = null;
+	protected boolean powerChange(int key) {
+		Integer previousKey = 2;
 		
 		if ((previousPosition != null) && (previousPosition.getAttributes().get("key") != null)) {
 			previousKey = Double.valueOf(String.valueOf(previousPosition.getAttributes().get("key"))).intValue();
 		} 
-		System.out.println("key="+key+", previousKey="+previousKey+", equal="+key.equals(previousKey));
-		return !key.equals(previousKey);
+		System.out.println("[POWER] key="+key+", previousKey="+previousKey+", chnage="+ (key != previousKey));
+		return key != previousKey;
 	}	
 	
 	protected Integer updatePosition() {
