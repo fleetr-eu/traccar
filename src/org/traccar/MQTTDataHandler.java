@@ -152,7 +152,7 @@ public class MQTTDataHandler extends OdometerHandler {
 			position.set("trip", String.valueOf(previousPosition.getAttributes().get("trip")));
 			tripTime();
 		} else {
-			System.out.println("[ERROR] Trip should not be null here (move)! deviceId = " + device.getUniqueId()); 
+			start(); 
 		}
 		
 		double maxSpeed = previousPosition.getAttributes().get("maxSpeed") != null ? Double.valueOf(String.valueOf(previousPosition.getAttributes().get("maxSpeed"))) : 0;
@@ -183,7 +183,7 @@ public class MQTTDataHandler extends OdometerHandler {
 		if (previousPosition.getAttributes().get("rest") != null) {
 			position.set("rest", String.valueOf(previousPosition.getAttributes().get("rest")));
 		} else { 
-			System.out.println("[ERROR] Rest should not be null here (rest)! deviceId = " + device.getUniqueId()); 
+			rest(); 
 		}
 		if (previousPosition.getAttributes().get("startRestTime") != null) {
 			long startRestTime = (long)previousPosition.getAttributes().get("startRestTime");
