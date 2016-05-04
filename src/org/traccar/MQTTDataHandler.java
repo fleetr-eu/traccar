@@ -251,7 +251,9 @@ public class MQTTDataHandler extends OdometerHandler {
 	protected Position handlePosition(Position position) {
 		
 		System.out.println("[INFO] Received: " + position.toString()); 
-		position.set("key", Double.valueOf(position.getAttributes().get("io239").toString()).intValue());
+		if (position.getAttributes().get("io239") != null) {
+			position.set("key", 0);
+		}
 		
 		super.handlePosition(position);
 		
