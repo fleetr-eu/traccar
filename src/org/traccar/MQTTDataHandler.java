@@ -85,6 +85,9 @@ public class MQTTDataHandler extends OdometerHandler {
 				return 0;
 			}
 		}
+		position.getAttributes().remove("startIdleTime");
+		position.getAttributes().remove("idleTime");
+		return 0;
 	}	
 	
 	private void updatePosition() {
@@ -247,13 +250,14 @@ public class MQTTDataHandler extends OdometerHandler {
 	
 	@Override
 	protected Position handlePosition(Position position) {
+
+		System.out.println("[Received]" + position);
+
 		super.handlePosition(position);
 		
 		updatePosition();
 		
 		String content = formatRequest(position);
-
-		System.out.println("Publishing to topic="+topic+": "+content);
 
 		MqttMessage message = new MqttMessage(content.getBytes());
 		message.setQos(qos);
@@ -262,6 +266,8 @@ public class MQTTDataHandler extends OdometerHandler {
 		} catch (MqttException e) {
 			e.printStackTrace();
 		}
+		
+		System.out.println("[Send]" + position);
 		
 		return position;
 	}
