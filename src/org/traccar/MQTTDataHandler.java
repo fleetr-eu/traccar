@@ -35,6 +35,8 @@ public class MQTTDataHandler extends OdometerHandler {
 	private static double minIdleSpeed = 1.0;
 	private static double minSpeedDetectMovement = 5.0;
 	private static double maxIdleTime = 90000;
+	private static long numberOfReceived = 0;
+	private static long numberOfSent = 0;
 	
 	public MQTTDataHandler() {
 		initMQTTClient();
@@ -256,7 +258,10 @@ public class MQTTDataHandler extends OdometerHandler {
 	
 	@Override
 	protected Position handlePosition(Position position) {
-		
+		if (numberOfReceived != numberOfSent) {
+			System.out.println("[ERROR] Number of received messages != Number of sent messages!");
+		}
+		numberOfReceived++;
 		System.out.println("[INFO] Received: " + position.toString()); 
 		if (position.getAttributes().get("io239") != null) {
 			position.set("key", 0);
@@ -275,7 +280,7 @@ public class MQTTDataHandler extends OdometerHandler {
 		} catch (MqttException e) {
 			e.printStackTrace();
 		}
-		
+		numberOfSent++;
 		System.out.println("[INFO] Send:" +  content.replaceAll("(\\r|\\n)", ""));
 		
 		return position;
