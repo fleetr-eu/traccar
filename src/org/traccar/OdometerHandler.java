@@ -72,6 +72,7 @@ public class OdometerHandler extends BaseDataHandler {
 	
 	protected void updateOdometer(Device device, Position position) {
 		device.setOdometer(device.getOdometer() + getDistance(position));
+		position.set("odometer", device.getOdometer());
 	}
 	
 	@Override

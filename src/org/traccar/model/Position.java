@@ -125,6 +125,8 @@ public class Position extends Event {
 	@Override
 	public String toString() {
 		return "position: { "+
+				" device:" + getDeviceId()+","+
+				" deviceTime:"+ getDeviceTime()+","+
 			    " fixTime: " + getFixTime() + ","+
 			    " outdated: " + getOutdated() + ","+
 			    " valid:" + getValid() + ", "+

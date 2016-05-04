@@ -252,7 +252,7 @@ public class MQTTDataHandler extends OdometerHandler {
 	protected Position handlePosition(Position position) {
 
 		
-			System.out.println("[INFO] Received: " + position.toString()); 
+		System.out.println("[INFO] Received: " + position.toString()); 
 		
 		super.handlePosition(position);
 		
@@ -268,7 +268,7 @@ public class MQTTDataHandler extends OdometerHandler {
 			e.printStackTrace();
 		}
 		
-		System.out.println("[INFO]" +  position.toString());
+		System.out.println("[INFO] Send:" +  content+"\n");
 		
 		return position;
 	}
