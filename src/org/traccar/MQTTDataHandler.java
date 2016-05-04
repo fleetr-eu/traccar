@@ -40,73 +40,69 @@ public class MQTTDataHandler extends OdometerHandler {
 		initMQTTClient();
 	}
 	
-	protected Integer getPreviousPowerState() {
-		if (previousPosition == null) {
-			return null;
+	protected boolean powerChange(int key) {
+		Integer previousKey = null;
+		
+		if ((previousPosition != null) && (previousPosition.getAttributes().get("key") != null)) {
+			previousKey = Double.valueOf(String.valueOf(previousPosition.getAttributes().get("key"))).intValue();
 		} 
-		return Double.valueOf(String.valueOf(previousPosition.getAttributes().get("power"))).intValue();
+		
+		return previousKey != key;
 	}	
 	
-	protected Integer getPowerState() {
-		if (position.getAttributes().get("io239") != null) {
-			return Double.valueOf(position.getAttributes().get("io239").toString()).intValue();
-		} 
+	protected Integer updatePosition() {
 		
-		if (position.getAttributes().get("key") != null) {
-			int key = Double.valueOf(position.getAttributes().get("key").toString()).intValue();
+		if (position.getAttributes().get("key") == null) {
+			System.out.println("[ERROR] Something went wrong: key:null for deviceId"+device.getUniqueId());
+			return null;
+		}
 		
-			if (key == 0) {
-				if ((position.getSpeed()  > minSpeedDetectMovement)) {
-					return 1;
-				} else {	
-					return 0;
-				}			
-			} else { 
-				if (position.getSpeed() > minIdleSpeed) {
-					return 1;
+		updateOdometer(device, position);
+		
+		int key = Double.valueOf(position.getAttributes().get("key").toString()).intValue();
+		
+		if (key == 1) {
+			if (position.getSpeed() > minIdleSpeed) {
+				if (powerChange(1)) {
+					start();
 				} else {
-					if (position.getAttributes().remove("idleTime") != null) {	
-						if (Double.valueOf(position.getAttributes().get("key").toString()).longValue() > maxIdleTime) {
-							position.getAttributes().remove("startIdleTime");
-							position.getAttributes().remove("idleTime");
-							return 0;
-						} else {
-							return 1;
-						}
-					} else { 
-						return 1;
+					move();
+				}
+				return 1;
+			} else /* idle */ {
+				if (idleTooLong()) {
+					if (powerChange(0)) {
+						stop();
+					} else {
+						rest();
 					}
+					return 0;
+				} else {
+					if (powerChange(1)) {
+						start();
+					} else {
+						move();
+					}
+					return 1; 
 				}
 			}
-		} else {
-			System.out.println("[ERROR] Something went wrong: key:null for deviceId"+device.getUniqueId());
-			return 0;
-		}
-	}	
-	
-	private void updatePosition() {
-			
-		Integer newPowerState = getPowerState();
-		Integer previousPowerState = getPreviousPowerState();
-		
-		if (newPowerState.equals(previousPowerState)) {
-			if (newPowerState.equals(1)) { 
-				move();
+		} else /* key == 0 */ {
+			if ((position.getSpeed() > minSpeedDetectMovement)) {
+				if (powerChange(0)) {
+					start();
+				} else {
+					move();
+				}
+				return 1;
 			} else {
-				rest();
-			}
-		} else {
-			if (newPowerState.equals(1)) { 
-				start(); 
-			} else {
-				stop();
+				if (powerChange(0)) {
+					stop();
+				} else {
+					rest();
+				}
+				return 0;
 			}
 		}
-		
-		position.set("power", newPowerState);	
-		
-//		String status = newPowerState == 1 ? Device.STATUS_ONLINE : Device.STATUS_OFFLINE;
-//		Context.getConnectionManager().updateDevice(device.getId(), status, position.getDeviceTime());
 	}
 
 	private void stop() {
@@ -115,7 +111,10 @@ public class MQTTDataHandler extends OdometerHandler {
 		position.set("startRestTime", position.getDeviceTime().getTime());
 		position.set("restTime", 0);
 		position.set("maxSpeed", 0);
-		updateOdometer(device, position);
+		position.set("startTripTime", position.getDeviceTime().getTime());
+		position.set("tripTime", 0);
+		position.getAttributes().remove("startIdleTime");
+		position.getAttributes().remove("idleTime");
 	}
 
 	private void start() {
@@ -124,18 +123,36 @@ public class MQTTDataHandler extends OdometerHandler {
 		position.set("startTripTime", position.getDeviceTime().getTime());
 		position.set("tripTime", 0);
 		position.set("maxSpeed", position.getSpeed());
-		updateOdometer(device, position);
+		position.getAttributes().remove("startIdleTime");
+		position.getAttributes().remove("idleTime");
+		position.getAttributes().remove("startRestTime");
+		position.getAttributes().remove("restTime");
+	}
+	
+	private void idle() {
+		if (previousPosition.getAttributes().get("startIdleTime") != null) { 
+		   long startIdleTime = (long)previousPosition.getAttributes().get("startIdleTime");
+		   long idleTime = position.getDeviceTime().getTime() - startIdleTime;
+		   position.set("startIdleTime", startIdleTime);
+		   position.set("idleTime", idleTime);
+		} else {
+			position.set("startIdleTime", (long) position.getDeviceTime().getTime());
+			position.set("idleTime", (long) 0);
+		}	
+	}
+	
+	private boolean idleTooLong() {
+		long idleTime = Double.valueOf(String.valueOf(position.getAttributes().get("idleTime"))).longValue();
+		return idleTime > maxIdleTime;
 	}
 
 	private void move() {
 		position.set("state", "start");
-	
 		if (previousPosition.getAttributes().get("trip") != null) {
-			updateOdometer(device, position);
 			position.set("trip", String.valueOf(previousPosition.getAttributes().get("trip")));
 			tripTime();
 		} else {
-			start();
+			System.out.println("[ERROR] Trip should not be null here (move)! deviceId = " + device.getUniqueId()); 
 		}
 		
 		double maxSpeed = previousPosition.getAttributes().get("maxSpeed") != null ? Double.valueOf(String.valueOf(previousPosition.getAttributes().get("maxSpeed"))) : 0;
@@ -149,18 +166,6 @@ public class MQTTDataHandler extends OdometerHandler {
 		}
 	}
 
-	private void idle() {
-		if (previousPosition.getAttributes().get("startIdleTime") != null) { 
-		   long startIdleTime = (long)previousPosition.getAttributes().get("startIdleTime");
-		   long idleTime = position.getDeviceTime().getTime() - startIdleTime;
-		   position.set("startIdleTime", startIdleTime);
-		   position.set("idleTime", idleTime);
-		} else {
-			position.set("startIdleTime", (long) position.getDeviceTime().getTime());
-			position.set("idleTime", (long) 0);
-		}	
-	}
-	
 	private void tripTime() {
 		if (previousPosition.getAttributes().get("startTripTime") != null) { 
 		   long startIdleTime = (long)previousPosition.getAttributes().get("startTripTime");
@@ -177,14 +182,14 @@ public class MQTTDataHandler extends OdometerHandler {
 		position.set("state", "stop");
 		if (previousPosition.getAttributes().get("rest") != null) {
 			position.set("rest", String.valueOf(previousPosition.getAttributes().get("rest")));
+		} else { 
+			System.out.println("[ERROR] Rest should not be null here (rest)! deviceId = " + device.getUniqueId()); 
 		}
 		if (previousPosition.getAttributes().get("startRestTime") != null) {
 			long startRestTime = (long)previousPosition.getAttributes().get("startRestTime");
 			long restTime = position.getDeviceTime().getTime() - startRestTime;
 			position.set("startRestTime", startRestTime);
 			position.set("restTime", restTime);
-		} else {
-			rest();
 		} 
 	}
 
@@ -244,9 +249,9 @@ public class MQTTDataHandler extends OdometerHandler {
 	
 	@Override
 	protected Position handlePosition(Position position) {
-
 		
 		System.out.println("[INFO] Received: " + position.toString()); 
+		position.set("key", Double.valueOf(position.getAttributes().get("io239").toString()).intValue());
 		
 		super.handlePosition(position);
 		
