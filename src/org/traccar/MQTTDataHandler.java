@@ -259,7 +259,7 @@ public class MQTTDataHandler extends OdometerHandler {
 	@Override
 	protected Position handlePosition(Position position) {
 		if (numberOfReceived != numberOfSent) {
-			System.out.println("[ERROR] Number of received messages != Number of sent messages!");
+			System.out.println("[ERROR] Number of received messages != Number of sent messages: "+numberOfReceived+", "+numberOfSent);
 		}
 		numberOfReceived++;
 		System.out.println("[INFO] Received: " + position.toString()); 
