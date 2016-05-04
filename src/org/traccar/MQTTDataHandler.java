@@ -33,6 +33,7 @@ public class MQTTDataHandler extends OdometerHandler {
 	private static MqttClient client = null;
 	//private static Map<String, Position> previousPositions = new HashMap<String, Position>();
 	private static double minIdleSpeed = 1.0;
+	private static double minSpeedDetectMovement = 5.0;
 	private static double maxIdleTime = 90000;
 	
 	public MQTTDataHandler() {
@@ -50,44 +51,37 @@ public class MQTTDataHandler extends OdometerHandler {
 		if (position.getAttributes().get("io239") != null) {
 			return Double.valueOf(position.getAttributes().get("io239").toString()).intValue();
 		} 
+		
 		if (position.getAttributes().get("key") != null) {
-			return Double.valueOf(position.getAttributes().get("key").toString()).intValue();
-		}
+			int key = Double.valueOf(position.getAttributes().get("key").toString()).intValue();
 		
-		Integer previousPowerState = getPreviousPowerState();
-		if (previousPowerState == null) {
-			if (position.getSpeed() > minIdleSpeed) {
-				return 1;
-			} else {
-				return 0; 
-			}
-		} 
-		
-		if (previousPowerState.equals(1)) {
-			if (position.getSpeed() < minIdleSpeed) { //device idle
-				idle();
-			}
-			if (position.getAttributes().get("idleTime") != null) {
-				if ((Long)position.getAttributes().get("idleTime") > maxIdleTime) {
-					position.getAttributes().remove("startIdleTime");
-					position.getAttributes().remove("idleTime");
-					return 0;
-				} else {
+			if (key == 0) {
+				if ((position.getSpeed()  > minSpeedDetectMovement)) {
 					return 1;
+				} else {	
+					return 0;
+				}			
+			} else { 
+				if (position.getSpeed() > minIdleSpeed) {
+					return 1;
+				} else {
+					if (position.getAttributes().remove("idleTime") != null) {	
+						if (Double.valueOf(position.getAttributes().get("key").toString()).longValue() > maxIdleTime) {
+							position.getAttributes().remove("startIdleTime");
+							position.getAttributes().remove("idleTime");
+							return 0;
+						} else {
+							return 1;
+						}
+					} else {
+						return 1;
+					}
 				}
 			}
 		} else {
-			if (position.getSpeed() > minIdleSpeed) {
-				return 1;
-			} else {
-				position.getAttributes().remove("startIdleTime");
-				position.getAttributes().remove("idleTime");
-				return 0;
-			}
+			System.out.println("[ERROR] Something went wrong: key:null for deviceId"+device.getUniqueId());
+			return 0;
 		}
-		position.getAttributes().remove("startIdleTime");
-		position.getAttributes().remove("idleTime");
-		return 0;
 	}	
 	
 	private void updatePosition() {

@@ -45,9 +45,17 @@ public class OdometerHandler extends BaseDataHandler {
 			e.printStackTrace();
 			previousPosition = null;
 		}
-		if ((previousPosition != null) && (position.getAttributes().get("key") == null)) {
-			position.set("key", Double.valueOf(previousPosition.getAttributes().get("key").toString()).intValue());
+		
+		if (position.getAttributes().get("key") != null) {
+			return; 
 		}
+			
+		if (previousPosition.getAttributes().get("key") != null) {
+			position.set("key", Double.valueOf(previousPosition.getAttributes().get("key").toString()).intValue());		
+		} else {
+			position.set("key", 0);		
+		}
+				
 	}
 	
 	protected int getDistance(Position position) {
@@ -60,9 +68,7 @@ public class OdometerHandler extends BaseDataHandler {
 		}
 		
 		if (previousPosition != null) {
-			double distance = DistanceCalculator.distance(
-                position.getLatitude(), position.getLongitude(),
-                previousPosition.getLatitude(), previousPosition.getLongitude());
+			double distance = DistanceCalculator.distance(position.getLatitude(), position.getLongitude(), previousPosition.getLatitude(), previousPosition.getLongitude());
 			position.set(Event.KEY_DISTANCE, distance);
 		} else {  
 			position.set(Event.KEY_DISTANCE, 0);
