@@ -88,7 +88,7 @@ public class MQTTDataHandler extends OdometerHandler {
 			}
 		} else /* key == 0 */ {
 			if ((position.getSpeed() > minSpeedDetectMovement)) {
-				if (powerChange(0)) {
+				if (powerChange(1)) {
 					start();
 				} else {
 					move();
