@@ -46,7 +46,7 @@ public class OdometerHandler extends BaseDataHandler {
 			previousPosition = null;
 		}
 		if ((previousPosition != null) && (position.getAttributes().get("key") == null)) {
-			position.set("key", Double.valueOf(position.getAttributes().get("key").toString()).intValue());
+			position.set("key", Double.valueOf(previousPosition.getAttributes().get("key").toString()).intValue());
 		}
 	}
 	
