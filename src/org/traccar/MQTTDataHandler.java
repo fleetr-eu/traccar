@@ -273,7 +273,7 @@ public class MQTTDataHandler extends OdometerHandler {
 			e.printStackTrace();
 		}
 		
-		System.out.println("[INFO] Send:" +  content+"\n");
+		System.out.println("[INFO] Send:" +  content.replaceAll("(\\r|\\n)", ""));
 		
 		return position;
 	}
