@@ -73,7 +73,7 @@ public class MQTTDataHandler extends OdometerHandler {
 						} else {
 							return 1;
 						}
-					} else {
+					} else { 
 						return 1;
 					}
 				}
