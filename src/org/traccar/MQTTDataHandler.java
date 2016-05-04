@@ -15,6 +15,8 @@
  */
 package org.traccar;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -23,10 +25,11 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.traccar.model.Device;
+import org.traccar.model.Event;
 import org.traccar.model.MiscFormatter;
 import org.traccar.model.Position;
 
-public class MQTTDataHandler extends OdometerHandler {
+public class MQTTDataHandler extends BaseDataHandler {
 
 	private static int qos = 2;
 	private static String topic = null;
@@ -38,11 +41,39 @@ public class MQTTDataHandler extends OdometerHandler {
 	private static long numberOfReceived = 0;
 	private static long numberOfSent = 0;
 	
+	private static Map<Long, Position> previousPositions = new HashMap<Long, Position>();
+	
 	public MQTTDataHandler() {
 		initMQTTClient();
 	}
 	
-	protected boolean powerChange(int key) {
+	private Position getPreviousPosition(long deviceId) {
+		return previousPositions.get(deviceId);
+	}
+	
+	protected int getDistance(Position position) {
+		if (position.getAttributes().get("io199") != null) {
+			position.set(Event.KEY_DISTANCE, (Double.valueOf(position.getAttributes().get("io199").toString()).intValue()));
+			return Double.valueOf(String.valueOf(position.getAttributes().get("io199"))).intValue();
+		}
+		if (position.getAttributes().get(Event.KEY_DISTANCE) != null) {
+			return Double.valueOf(position.getAttributes().get(Event.KEY_DISTANCE).toString()).intValue();
+		}
+		
+		position.set(Event.KEY_DISTANCE, 0);
+		
+		return Double.valueOf(String.valueOf(position.getAttributes().get(Event.KEY_DISTANCE))).intValue();
+	}
+	
+	protected void updateOdometer(Device device, Position position, Position previousPosition) {
+		device.setOdometer(device.getOdometer() + getDistance(position));
+		position.set("odometer", device.getOdometer());
+	}
+	
+	protected boolean powerChange(Device device, int key) {
+		
+		Position previousPosition = getPreviousPosition(device.getId());
+		
 		Integer previousKey = 2;
 		
 		if ((previousPosition != null) && (previousPosition.getAttributes().get("key") != null)) {
@@ -52,75 +83,73 @@ public class MQTTDataHandler extends OdometerHandler {
 		return key != previousKey;
 	}	
 	
-	protected Integer updatePosition() {
+	protected Integer updatePosition(Position position, Device device) {	
 		
 		if (position.getAttributes().get("key") == null) {
 			System.out.println("[ERROR] Something went wrong: key:null for deviceId"+device.getUniqueId());
 			return null;
 		}
 		
-		updateOdometer(device, position);
-		
 		int key = Double.valueOf(position.getAttributes().get("key").toString()).intValue();
 		
 		if (key == 1) {
 			if (position.getSpeed() > minIdleSpeed) {
-				if (powerChange(1)) {
-					start();
+				if (powerChange(device, 1)) {
+					start(position);
 				} else {
-					move(1);
+					move(position, device);
 				}
 				return 1;
 			} else /* idle */ {
-				if (idleTooLong()) {
-					if (powerChange(0)) {
-						stop();
+				if (idleTooLong(position, device)) {
+					if (powerChange(device, 0)) {
+						stop(position);
 					} else {
-						rest(1);
+						rest(position, device);
 					}
 					return 0;
 				} else {
-					if (powerChange(1)) {
-						start();
+					if (powerChange(device, 1)) {
+						start(position);
 					} else {
-						move(2);
+						move(position, device);
 					}
 					return 1; 
 				}
 			}
 		} else /* key == 0 */ {
 			if ((position.getSpeed() > minSpeedDetectMovement)) {
-				if (powerChange(1)) {
-					start();
+				if (powerChange(device, 1)) {
+					start(position);
 				} else {
-					move(3);
+					move(position, device);
 				}
 				return 1;
 			} else {
-				if (powerChange(0)) {
-					stop();
+				if (powerChange(device, 0)) {
+					stop(position);
 				} else {
-					rest(2);
+					rest(position, device);
 				}
 				return 0;
 			}
 		}
 	}
 
-	private void stop() {
+	private void stop(Position position) {
 		position.set("key", 0);
 		position.set("state", "stop");
 		position.set("rest", UUID.randomUUID().toString());
 		position.set("startRestTime", position.getDeviceTime().getTime());
 		position.set("restTime", 0);
 		position.set("maxSpeed", 0);
-		position.set("startTripTime", position.getDeviceTime().getTime());
-		position.set("tripTime", 0);
+		position.getAttributes().remove("startTripTime");
+		position.getAttributes().remove("tripTime");
 		position.getAttributes().remove("startIdleTime");
 		position.getAttributes().remove("idleTime");
 	}
 
-	private void start() {
+	private void start(Position position) {
 		position.set("key", 1);
 		position.set("state", "start");
 		position.set("trip", UUID.randomUUID().toString());
@@ -133,8 +162,10 @@ public class MQTTDataHandler extends OdometerHandler {
 		position.getAttributes().remove("restTime");
 	}
 	
-	private void idle() {
-		if (previousPosition.getAttributes().get("startIdleTime") != null) { 
+	private void idle(Position position, Device device) {
+		Position previousPosition = getPreviousPosition(device.getId());
+		
+		if ((previousPosition != null) && (previousPosition.getAttributes().get("startIdleTime") != null)) { 
 		   long startIdleTime = (long)previousPosition.getAttributes().get("startIdleTime");
 		   long idleTime = position.getDeviceTime().getTime() - startIdleTime;
 		   position.set("startIdleTime", startIdleTime);
@@ -145,22 +176,25 @@ public class MQTTDataHandler extends OdometerHandler {
 		}	
 	}
 	
-	private boolean idleTooLong() {
-		if (position.getAttributes().get("idleTime") != null) {
+	private boolean idleTooLong(Position position, Device device) {
+		idle(position, device);
+		Position previousPosition = getPreviousPosition(device.getId());
+		if ((previousPosition != null) && (previousPosition.getAttributes().get("idleTime") != null)) {
 			return Double.valueOf(String.valueOf(position.getAttributes().get("idleTime"))).longValue() > maxIdleTime;
 		}
 		return false; 
 			
 	}
 
-	private void move(int where) {
+	private void move(Position position, Device device) {
 		position.set("key", 1);
 		position.set("state", "start");
-		if (previousPosition.getAttributes().get("trip") != null) {
+		Position previousPosition = getPreviousPosition(device.getId());
+		if ((previousPosition != null) && (previousPosition.getAttributes().get("trip") != null)) {
 			position.set("trip", String.valueOf(previousPosition.getAttributes().get("trip")));
-			tripTime();
+			tripTime(position, device);
 		} else {
-			System.out.println("[ERROR] Trip should not be null here (move="+where+")! deviceId = " + device.getUniqueId()); 
+			System.out.println("[ERROR] Trip should not be null here (move)! deviceId = " + device.getUniqueId()); 
 		}
 		
 		double maxSpeed = previousPosition.getAttributes().get("maxSpeed") != null ? Double.valueOf(String.valueOf(previousPosition.getAttributes().get("maxSpeed"))) : 0;
@@ -170,12 +204,13 @@ public class MQTTDataHandler extends OdometerHandler {
 			position.set("maxSpeed", maxSpeed);
 		}
 		if (position.getSpeed() < minIdleSpeed) { //device idle	
-			idle();
+			idle(position, device);
 		}
 	}
 
-	private void tripTime() {
-		if (previousPosition.getAttributes().get("startTripTime") != null) { 
+	private void tripTime(Position position, Device device) {
+		Position previousPosition = getPreviousPosition(device.getId());
+		if ((previousPosition != null) && (previousPosition.getAttributes().get("startTripTime") != null)) { 
 		   long startIdleTime = (long)previousPosition.getAttributes().get("startTripTime");
 		   long idleTime = position.getDeviceTime().getTime() - startIdleTime;
 		   position.set("startTripTime", startIdleTime);
@@ -186,13 +221,14 @@ public class MQTTDataHandler extends OdometerHandler {
 		}	
 	}
 	
-	private void rest(int where) {
+	private void rest(Position position, Device device) {
 		position.set("key", 0);
 		position.set("state", "stop");
-		if (previousPosition.getAttributes().get("rest") != null) {
+		Position previousPosition = getPreviousPosition(device.getId());
+		if ((previousPosition != null) && (previousPosition.getAttributes().get("rest") != null)) {
 			position.set("rest", String.valueOf(previousPosition.getAttributes().get("rest")));
 		} else { 
-			System.out.println("[ERROR] Rest should not be null here (rest="+where+")! deviceId = " + device.getUniqueId()); 
+			System.out.println("[ERROR] Rest should not be null here (rest)! deviceId = " + device.getUniqueId()); 
 		}
 		if (previousPosition.getAttributes().get("startRestTime") != null) {
 			long startRestTime = (long)previousPosition.getAttributes().get("startRestTime");
@@ -256,34 +292,59 @@ public class MQTTDataHandler extends OdometerHandler {
 		return request;
 	}
 	
-	@Override
-	protected Position handlePosition(Position position) {
-		if (numberOfReceived != numberOfSent) {
-			System.out.println("[ERROR] Number of received messages != Number of sent messages: "+numberOfReceived+", "+numberOfSent);
-		}
-		numberOfReceived++;
-		System.out.println("[INFO] Received: " + position.toString()); 
+	private void initKey(Position position, Device device) {
+		
 		if (position.getAttributes().get("io239") != null) {
 			position.set("key", 0);
+		} else {
+			if (position.getAttributes().get("key") != null) {
+				return;
+			}
 		}
 		
-		super.handlePosition(position);
+		Position previousPosition = getPreviousPosition(device.getId());
 		
-		updatePosition();
-		
-		String content = formatRequest(position);
-
-		MqttMessage message = new MqttMessage(content.getBytes());
-		message.setQos(qos);
-		try {
-			client.publish(topic, message);
-		} catch (MqttException e) {
-			e.printStackTrace();
+		if ((previousPosition != null) && (previousPosition.getAttributes().get("key") != null)) {
+			position.set("key", Double.valueOf(previousPosition.getAttributes().get("key").toString()).intValue());		
+		} else {
+			position.set("key", 2);		
 		}
-		numberOfSent++;
-		System.out.println("[INFO] Send:" +  content.replaceAll("(\\r|\\n)", ""));
 		
-		return position;
 	}
+	
+	@Override
+	protected Position handlePosition(Position position) {
+		Device device = Context.getIdentityManager().getDeviceById(position.getDeviceId());
+		updateOdometer(device, position, previousPositions.get(device.getId()));	
+		synchronized (device) {
+			if (numberOfReceived != numberOfSent) {
+				System.out.println("[ERROR] Number of received messages != Number of sent messages: "+numberOfReceived+", "+numberOfSent);
+			}
+			numberOfReceived++;
+			System.out.println("[INFO] Received: " + position.toString()); 
+			
+			initKey(position, device);
+				
+			updatePosition(position, device);
+			
+			String content = formatRequest(position);
+	
+			MqttMessage message = new MqttMessage(content.getBytes());
+			message.setQos(qos);
+			try {
+				client.publish(topic, message);
+			} catch (MqttException e) {
+				e.printStackTrace();
+			}
+			numberOfSent++;
+			System.out.println("[INFO] Send:" +  content.replaceAll("\\r\\n", ""));
+		}
+		
+		previousPositions.put(device.getId(), position);
+		return position;
+		
+	}
+
+	
 
 }
