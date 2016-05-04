@@ -106,6 +106,7 @@ public class MQTTDataHandler extends OdometerHandler {
 	}
 
 	private void stop() {
+		position.set("key", 0);
 		position.set("state", "stop");
 		position.set("rest", UUID.randomUUID().toString());
 		position.set("startRestTime", position.getDeviceTime().getTime());
@@ -118,6 +119,7 @@ public class MQTTDataHandler extends OdometerHandler {
 	}
 
 	private void start() {
+		position.set("key", 1);
 		position.set("state", "start");
 		position.set("trip", UUID.randomUUID().toString());
 		position.set("startTripTime", position.getDeviceTime().getTime());
@@ -147,6 +149,7 @@ public class MQTTDataHandler extends OdometerHandler {
 	}
 
 	private void move() {
+		position.set("key", 1);
 		position.set("state", "start");
 		if (previousPosition.getAttributes().get("trip") != null) {
 			position.set("trip", String.valueOf(previousPosition.getAttributes().get("trip")));
@@ -179,6 +182,7 @@ public class MQTTDataHandler extends OdometerHandler {
 	}
 	
 	private void rest() {
+		position.set("key", 0);
 		position.set("state", "stop");
 		if (previousPosition.getAttributes().get("rest") != null) {
 			position.set("rest", String.valueOf(previousPosition.getAttributes().get("rest")));
