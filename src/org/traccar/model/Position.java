@@ -122,4 +122,21 @@ public class Position extends Event {
         this.address = address;
     }
 
+	@Override
+	public String toString() {
+		return "position: { "+
+			    " fixTime: " + getFixTime() + ","+
+			    " outdated: " + getOutdated() + ","+
+			    " valid:" + getValid() + ", "+
+			    " latitude: " + getLatitude() + ", "+
+			    " longitude:" + getLongitude() + ", "+
+			    " altitude:" + getAltitude() + ", "+
+			    " speed: " + getSpeed() + ", "+
+			    " course:" + getCourse() + ", "+
+			    " \nattributes: " + MiscFormatter.toJsonString(getAttributes()) + "}"+
+			    "}";
+	}
+    
+    
+
 }
