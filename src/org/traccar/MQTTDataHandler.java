@@ -46,7 +46,7 @@ public class MQTTDataHandler extends OdometerHandler {
 		if ((previousPosition != null) && (previousPosition.getAttributes().get("key") != null)) {
 			previousKey = Double.valueOf(String.valueOf(previousPosition.getAttributes().get("key"))).intValue();
 		} 
-		System.out.println("[POWER] key="+key+", previousKey="+previousKey+", chnage="+ (key != previousKey));
+		System.out.println("[POWER] key="+key+", previousKey="+previousKey+", change="+ (key != previousKey));
 		return key != previousKey;
 	}	
 	
@@ -66,7 +66,7 @@ public class MQTTDataHandler extends OdometerHandler {
 				if (powerChange(1)) {
 					start();
 				} else {
-					move();
+					move(1);
 				}
 				return 1;
 			} else /* idle */ {
@@ -74,14 +74,14 @@ public class MQTTDataHandler extends OdometerHandler {
 					if (powerChange(0)) {
 						stop();
 					} else {
-						rest();
+						rest(1);
 					}
 					return 0;
 				} else {
 					if (powerChange(1)) {
 						start();
 					} else {
-						move();
+						move(2);
 					}
 					return 1; 
 				}
@@ -91,14 +91,14 @@ public class MQTTDataHandler extends OdometerHandler {
 				if (powerChange(1)) {
 					start();
 				} else {
-					move();
+					move(3);
 				}
 				return 1;
 			} else {
 				if (powerChange(0)) {
 					stop();
 				} else {
-					rest();
+					rest(2);
 				}
 				return 0;
 			}
@@ -148,14 +148,14 @@ public class MQTTDataHandler extends OdometerHandler {
 		return idleTime > maxIdleTime;
 	}
 
-	private void move() {
+	private void move(int where) {
 		position.set("key", 1);
 		position.set("state", "start");
 		if (previousPosition.getAttributes().get("trip") != null) {
 			position.set("trip", String.valueOf(previousPosition.getAttributes().get("trip")));
 			tripTime();
 		} else {
-			System.out.println("[ERROR] Trip should not be null here (move)! deviceId = " + device.getUniqueId()); 
+			System.out.println("[ERROR] Trip should not be null here (move="+where+")! deviceId = " + device.getUniqueId()); 
 		}
 		
 		double maxSpeed = previousPosition.getAttributes().get("maxSpeed") != null ? Double.valueOf(String.valueOf(previousPosition.getAttributes().get("maxSpeed"))) : 0;
@@ -181,13 +181,13 @@ public class MQTTDataHandler extends OdometerHandler {
 		}	
 	}
 	
-	private void rest() {
+	private void rest(int where) {
 		position.set("key", 0);
 		position.set("state", "stop");
 		if (previousPosition.getAttributes().get("rest") != null) {
 			position.set("rest", String.valueOf(previousPosition.getAttributes().get("rest")));
 		} else { 
-			System.out.println("[ERROR] Rest should not be null here (rest)! deviceId = " + device.getUniqueId()); 
+			System.out.println("[ERROR] Rest should not be null here (rest="+where+")! deviceId = " + device.getUniqueId()); 
 		}
 		if (previousPosition.getAttributes().get("startRestTime") != null) {
 			long startRestTime = (long)previousPosition.getAttributes().get("startRestTime");
