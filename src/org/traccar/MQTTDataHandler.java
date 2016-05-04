@@ -144,8 +144,11 @@ public class MQTTDataHandler extends OdometerHandler {
 	}
 	
 	private boolean idleTooLong() {
-		long idleTime = Double.valueOf(String.valueOf(position.getAttributes().get("idleTime"))).longValue();
-		return idleTime > maxIdleTime;
+		if (position.getAttributes().get("idleTime") != null) {
+			return Double.valueOf(String.valueOf(position.getAttributes().get("idleTime"))).longValue() > maxIdleTime;
+		}
+		return false; 
+			
 	}
 
 	private void move(int where) {
