@@ -307,9 +307,8 @@ public class MQTTDataHandler extends BaseDataHandler {
 		if ((previousPosition != null) && (previousPosition.getAttributes().get("key") != null)) {
 			position.set("key", Double.valueOf(previousPosition.getAttributes().get("key").toString()).intValue());		
 		} else {
-			position.set("key", 2);		
+			position.set("key", 1);		
 		}
-		
 	}
 	
 	@Override
