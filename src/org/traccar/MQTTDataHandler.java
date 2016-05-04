@@ -65,10 +65,10 @@ public class MQTTDataHandler extends BaseDataHandler {
 		return Double.valueOf(String.valueOf(position.getAttributes().get(Event.KEY_DISTANCE))).intValue();
 	}
 	
-	protected void updateOdometer(Device device, Position position, Position previousPosition) {
-		device.setOdometer(device.getOdometer() + getDistance(position));
-		position.set("odometer", device.getOdometer());
-	}
+//	protected void updateOdometer(Device device, Position position, Position previousPosition) {
+//		device.setOdometer(device.getOdometer() + getDistance(position));
+//		position.set("odometer", device.getOdometer());
+//	}
 	
 	protected boolean powerChange(Device device, int key) {
 		
@@ -314,7 +314,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 	@Override
 	protected Position handlePosition(Position position) {
 		Device device = Context.getIdentityManager().getDeviceById(position.getDeviceId());
-		updateOdometer(device, position, previousPositions.get(device.getId()));	
+//		updateOdometer(device, position, previousPositions.get(device.getId()));	
 		synchronized (device) {
 			if (numberOfReceived != numberOfSent) {
 				System.out.println("[ERROR] Number of received messages != Number of sent messages: "+numberOfReceived+", "+numberOfSent);
