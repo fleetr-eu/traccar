@@ -299,11 +299,12 @@ public class MQTTDataHandler extends BaseDataHandler {
 	private void initKey(Position position, Device device) {
 		
 		if (position.getAttributes().get("io239") != null) {
-			position.set("key", 0);
-		} else {
-			if (position.getAttributes().get("key") != null) {
-				return;
-			}
+			position.set("key", Double.valueOf(position.getAttributes().get("io239").toString()).intValue());
+			return;
+		} 
+		
+		if (position.getAttributes().get("key") != null) {
+			return;
 		}
 		
 		Position previousPosition = getPreviousPosition(device.getId());
