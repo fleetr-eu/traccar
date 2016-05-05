@@ -86,11 +86,15 @@ public class MQTTDataHandler extends BaseDataHandler {
 	protected Integer updatePosition(Position position, Device device) {	
 		
 		if (position.getAttributes().get("key") == null) {
-			System.out.println("[ERROR] Something went wrong: key:null for deviceId"+device.getUniqueId());
+			System.out.println("[ERROR] Key is null for deviceId="+device.getUniqueId());
 			return null;
 		}
-		
-		int key = Double.valueOf(position.getAttributes().get("key").toString()).intValue();
+		int key = 1;
+		try {
+			key = Double.valueOf(position.getAttributes().get("key").toString()).intValue();
+		} catch (Exception e) {
+			System.out.println("[ERROR] "+e.getMessage()+" => key="+position.getAttributes().get("key")+" for deviceId="+ device.getUniqueId());
+		}
 		
 		if (key == 1) {
 			if (position.getSpeed() > minIdleSpeed) {

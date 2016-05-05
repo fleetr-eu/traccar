@@ -24,10 +24,18 @@ Ext.define('Traccar.AttributeFormatter', {
     speedFormatter: function (value) {
         return Ext.getStore('SpeedUnits').formatValue(value, Traccar.app.getPreference('speedUnit'));
     },
+    
+    dateWithMsFormatter: function (value) {
+    	if (Traccar.app.getPreference('twelveHourFormat', false)) {
+            return Ext.Date.format(new Date(value), Traccar.Style.dateTimeFormat12)+" ( "+value+ "ms)";
+        } else {
+            return Ext.Date.format(new Date(value), Traccar.Style.dateTimeFormat24)+" ( "+value+ "ms)";
+        }
+    },
 
     courseFormatter: function (value) {
         var courseValues = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-        return courseValues[Math.floor(value / 45)];
+        return courseValues[Math.floor(value / 45)]+" ("+value+"°)";
     },
 
     distanceFormatter: function (value) {
@@ -58,6 +66,8 @@ Ext.define('Traccar.AttributeFormatter', {
             return this.courseFormatter;
         } else if (key === 'distance' || key === 'odometer') {
             return this.distanceFormatter;
+        } else if (key === 'startTripTime' || key === 'startIdleTime' || key === 'startRestTime') {
+            return this.dateWithMsFormatter; 
         } else {
             return this.defaultFormatter;
         }
