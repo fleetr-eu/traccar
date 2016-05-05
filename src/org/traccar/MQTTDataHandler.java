@@ -37,7 +37,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 	//private static Map<String, Position> previousPositions = new HashMap<String, Position>();
 	private static double minIdleSpeed = 1.0;
 	private static double minSpeedDetectMovement = 5.0;
-	private static double maxIdleTime = 90000;
+	private static double maxIdleTime = 300000;
 	private static long numberOfReceived = 0;
 	private static long numberOfSent = 0;
 	
@@ -280,7 +280,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 			.replace("##latitude##", String.valueOf(position.getLatitude()))
 			.replace("##longitude##", String.valueOf(position.getLongitude()))
 			.replace("##distance##", String.valueOf(getDistance(position)))
-			.replace("##odometer##", String.valueOf(device.getOdometer()))
+//			.replace("##odometer##", String.valueOf(device.getOdometer()))
 			.replace("##altitude##", String.valueOf(position.getAltitude()))
 			.replace("##speed##", String.valueOf(position.getSpeed()))
 			.replace("##maxSpeed##", String.valueOf(position.getAttributes().get("maxSpeed")))
