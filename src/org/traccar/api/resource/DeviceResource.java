@@ -52,7 +52,7 @@ public class DeviceResource extends BaseResource {
             return Context.getDataManager().getDevices(userId);
         }
     }
-
+    
     @POST
     public Response add(Device entity) throws SQLException {
         Context.getPermissionsManager().checkReadonly(getUserId());
@@ -81,4 +81,12 @@ public class DeviceResource extends BaseResource {
         return Response.noContent().build();
     }
 
+    @Path("{id}")
+    @GET
+    public Device get(@PathParam("id") long id) throws SQLException {
+        Context.getPermissionsManager().checkReadonly(getUserId());
+        Context.getPermissionsManager().checkDevice(getUserId(), id);
+        return Context.getDataManager().getDeviceById(id);
+    }
+    
 }
