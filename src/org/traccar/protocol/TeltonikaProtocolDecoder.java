@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 - 2015 Anton Tananaev (anton.tananaev@gmail.com)
+ * Copyright 2013 - 2016 Anton Tananaev (anton.tananaev@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,17 +57,143 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
     private static final int CODEC_FM4X00 = 0x08;
     private static final int CODEC_12 = 0x0C;
 
-    private List<Position> parseLocation(Channel channel, ChannelBuffer buf) {
+    private void decodeSerial(Position position, ChannelBuffer buf) {
+
+        getLastLocation(position, null);
+
+        position.set(Event.KEY_TYPE, buf.readUnsignedByte());
+
+        position.set("command", buf.readBytes(buf.readInt()).toString(StandardCharsets.US_ASCII));
+
+    }
+
+    private void decodeLocation(Position position, ChannelBuffer buf, int codec) {
+
+        int globalMask = 0x0f;
+
+        if (codec == CODEC_GH3000) {
+
+            long time = buf.readUnsignedInt() & 0x3fffffff;
+            time += 1167609600; // 2007-01-01 00:00:00
+
+            globalMask = buf.readUnsignedByte();
+            if (BitUtil.check(globalMask, 0)) {
+
+                position.setTime(new Date(time * 1000));
+
+                int locationMask = buf.readUnsignedByte();
+
+                if (BitUtil.check(locationMask, 0)) {
+                    position.setLatitude(buf.readFloat());
+                    position.setLongitude(buf.readFloat());
+                }
+
+                if (BitUtil.check(locationMask, 1)) {
+                    position.setAltitude(buf.readUnsignedShort());
+                }
+
+                if (BitUtil.check(locationMask, 2)) {
+                    position.setCourse(buf.readUnsignedByte() * 360.0 / 256);
+                }
+
+                if (BitUtil.check(locationMask, 3)) {
+                    position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
+                }
+
+                if (BitUtil.check(locationMask, 4)) {
+                    int satellites = buf.readUnsignedByte();
+                    position.set(Event.KEY_SATELLITES, satellites);
+                    position.setValid(satellites >= 3);
+                }
+
+                if (BitUtil.check(locationMask, 5)) {
+                    position.set(Event.KEY_LAC, buf.readUnsignedShort());
+                    position.set(Event.KEY_CID, buf.readUnsignedShort());
+                }
+
+                if (BitUtil.check(locationMask, 6)) {
+                    position.set(Event.KEY_GSM, buf.readUnsignedByte());
+                }
+
+                if (BitUtil.check(locationMask, 7)) {
+                    position.set("operator", buf.readUnsignedInt());
+                }
+
+            } else {
+
+                getLastLocation(position, new Date(time * 1000));
+
+            }
+
+        } else {
+
+            position.setTime(new Date(buf.readLong()));
+
+            position.set("priority", buf.readUnsignedByte());
+
+            position.setLongitude(buf.readInt() / 10000000.0);
+            position.setLatitude(buf.readInt() / 10000000.0);
+            position.setAltitude(buf.readShort());
+            position.setCourse(buf.readUnsignedShort());
+
+            int satellites = buf.readUnsignedByte();
+            position.set(Event.KEY_SATELLITES, satellites);
+
+            position.setValid(satellites != 0);
+
+            position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedShort()));
+
+            position.set(Event.KEY_EVENT, buf.readUnsignedByte());
+
+            buf.readUnsignedByte(); // total IO data records
+
+        }
+
+        // Read 1 byte data
+        if (BitUtil.check(globalMask, 1)) {
+            int cnt = buf.readUnsignedByte();
+            for (int j = 0; j < cnt; j++) {
+                int id = buf.readUnsignedByte();
+                if (id == 1) {
+                    position.set(Event.KEY_POWER, buf.readUnsignedByte());
+                } else {
+                    position.set(Event.PREFIX_IO + id, buf.readUnsignedByte());
+                }
+            }
+        }
+
+        // Read 2 byte data
+        if (BitUtil.check(globalMask, 2)) {
+            int cnt = buf.readUnsignedByte();
+            for (int j = 0; j < cnt; j++) {
+                position.set(Event.PREFIX_IO + buf.readUnsignedByte(), buf.readUnsignedShort());
+            }
+        }
+
+        // Read 4 byte data
+        if (BitUtil.check(globalMask, 3)) {
+            int cnt = buf.readUnsignedByte();
+            for (int j = 0; j < cnt; j++) {
+                position.set(Event.PREFIX_IO + buf.readUnsignedByte(), buf.readUnsignedInt());
+            }
+        }
+
+        // Read 8 byte data
+        if (codec == CODEC_FM4X00) {
+            int cnt = buf.readUnsignedByte();
+            for (int j = 0; j < cnt; j++) {
+                position.set(Event.PREFIX_IO + buf.readUnsignedByte(), buf.readLong());
+            }
+        }
+
+    }
+
+    private List<Position> parseData(Channel channel, ChannelBuffer buf) {
         List<Position> positions = new LinkedList<>();
 
         buf.skipBytes(4); // marker
         buf.readUnsignedInt(); // data length
-        int codec = buf.readUnsignedByte(); // codec
-
-        if (codec == CODEC_12) {
-            return null; // decode serial port data
-        }
-
+        int codec = buf.readUnsignedByte();
         int count = buf.readUnsignedByte();
 
         for (int i = 0; i < count; i++) {
@@ -76,122 +202,12 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
 
             position.setDeviceId(getDeviceId());
 
-            int globalMask = 0x0f;
-
-            if (codec == CODEC_GH3000) {
-
-                long time = buf.readUnsignedInt() & 0x3fffffff;
-                time += 1167609600; // 2007-01-01 00:00:00
-
-                globalMask = buf.readUnsignedByte();
-                if (BitUtil.check(globalMask, 0)) {
-
-                    position.setTime(new Date(time * 1000));
-
-                    int locationMask = buf.readUnsignedByte();
-
-                    if (BitUtil.check(locationMask, 0)) {
-                        position.setLatitude(buf.readFloat());
-                        position.setLongitude(buf.readFloat());
-                    }
-
-                    if (BitUtil.check(locationMask, 1)) {
-                        position.setAltitude(buf.readUnsignedShort());
-                    }
-
-                    if (BitUtil.check(locationMask, 2)) {
-                        position.setCourse(buf.readUnsignedByte() * 360.0 / 256);
-                    }
-
-                    if (BitUtil.check(locationMask, 3)) {
-                        position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedByte()));
-                    }
-
-                    if (BitUtil.check(locationMask, 4)) {
-                        int satellites = buf.readUnsignedByte();
-                        position.set(Event.KEY_SATELLITES, satellites);
-                        position.setValid(satellites >= 3);
-                    }
-
-                    if (BitUtil.check(locationMask, 5)) {
-                        position.set(Event.KEY_LAC, buf.readUnsignedShort());
-                        position.set(Event.KEY_CID, buf.readUnsignedShort());
-                    }
-
-                    if (BitUtil.check(locationMask, 6)) {
-                        position.set(Event.KEY_GSM, buf.readUnsignedByte());
-                    }
-
-                    if (BitUtil.check(locationMask, 7)) {
-                        position.set("operator", buf.readUnsignedInt());
-                    }
-
-                } else {
-
-                    getLastLocation(position, new Date(time * 1000));
-
-                }
-
+            if (codec == CODEC_12) {
+                decodeSerial(position, buf);
             } else {
-
-                position.setTime(new Date(buf.readLong()));
-
-                position.set("priority", buf.readUnsignedByte());
-
-                position.setLongitude(buf.readInt() / 10000000.0);
-                position.setLatitude(buf.readInt() / 10000000.0);
-                position.setAltitude(buf.readShort());
-                position.setCourse(buf.readUnsignedShort());
-
-                int satellites = buf.readUnsignedByte();
-                position.set(Event.KEY_SATELLITES, satellites);
-
-                position.setValid(satellites != 0);
-
-                position.setSpeed(UnitsConverter.knotsFromKph(buf.readUnsignedShort()));
-
-                position.set(Event.KEY_EVENT, buf.readUnsignedByte());
-
-                buf.readUnsignedByte(); // total IO data records
-
+                decodeLocation(position, buf, codec);
             }
 
-            // Read 1 byte data
-            if (BitUtil.check(globalMask, 1)) {
-                int cnt = buf.readUnsignedByte();
-                for (int j = 0; j < cnt; j++) {
-                    int id = buf.readUnsignedByte();
-                    if (id == 1) {
-                        position.set(Event.KEY_POWER, buf.readUnsignedByte());
-                    } else {
-                        position.set(Event.PREFIX_IO + id, buf.readUnsignedByte());
-                    }
-                }
-            }
-
-            // Read 2 byte data
-            if (BitUtil.check(globalMask, 2)) {
-                int cnt = buf.readUnsignedByte();
-                for (int j = 0; j < cnt; j++) {
-                    position.set(Event.PREFIX_IO + buf.readUnsignedByte(), buf.readUnsignedShort());
-                }
-            }
-
-            // Read 4 byte data
-            if (BitUtil.check(globalMask, 3)) {
-                int cnt = buf.readUnsignedByte();
-                for (int j = 0; j < cnt; j++) {
-                    position.set(Event.PREFIX_IO + buf.readUnsignedByte(), buf.readUnsignedInt());
-                }
-            }
-
-            // Read 8 byte data
-            if (codec == CODEC_FM4X00) {
-                int cnt = buf.readUnsignedByte();
-                for (int j = 0; j < cnt; j++) {
-                    position.set(Event.PREFIX_IO + buf.readUnsignedByte(), buf.readLong());
-                }
-            }
             positions.add(position);
         }
 
@@ -213,7 +229,7 @@ public class TeltonikaProtocolDecoder extends BaseProtocolDecoder {
         if (buf.getUnsignedShort(0) > 0) {
             parseIdentification(channel, remoteAddress, buf);
         } else {
-            return parseLocation(channel, buf);
+            return parseData(channel, buf);
         }
 
         return null;
