@@ -43,6 +43,8 @@
 
     <entry key='geocoder.enable'>true</entry>
     <entry key='geocoder.type'>google</entry>
+    <entry key='geocoder.processInvalidPositions'>true</entry>
+	<entry key='geocode.processInvalidPositions'>true</entry>
 
     <entry key='logger.enable'>true</entry>
     <entry key='logger.level'>all</entry>
