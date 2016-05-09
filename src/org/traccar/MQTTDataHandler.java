@@ -291,7 +291,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 			.replace("##course##", String.valueOf(position.getCourse()))
 			.replace("##state##", String.valueOf(position.getAttributes().get("state")))
 			.replace("##idle##", String.valueOf(position.getAttributes().get("idle")))
-			.replace("##address##", position.getAddress() != null ?  position.getAddress().replace("\"",  "'") : "")
+			.replace("##address##", position.getAddress() != null ?  position.getAddress().replace("\"",  "") : "")
 		 	.replace("##attributes##", MiscFormatter.toJsonString(position.getAttributes()));
 		return request;
 	}
