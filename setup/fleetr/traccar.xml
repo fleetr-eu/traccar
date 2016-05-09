@@ -42,11 +42,6 @@
     <entry key='web.path'>/opt/traccar/web</entry>
 
     <entry key='geocoder.enable'>true</entry>
-    <entry key='geocoder.type'>opencage</entry>
-    <entry key='geocoder.url'>http://api.opencagedata.com/geocode/v1</entry>
-    <entry key='geocoder.key'>7afb6d3a8e5c2284f6243751210aca7f</entry>
-    
-    
     <entry key='geocoder.type'>google</entry>
 
     <entry key='logger.enable'>true</entry>
