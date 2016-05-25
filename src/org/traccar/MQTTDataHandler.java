@@ -320,6 +320,12 @@ public class MQTTDataHandler extends BaseDataHandler {
 	protected Position handlePosition(Position position) {
 		Device device = Context.getIdentityManager().getDeviceById(position.getDeviceId());
 //		updateOdometer(device, position, previousPositions.get(device.getId()));	
+		if (device == null) {
+			if (position != null) {
+				System.out.println("[WARN] Unknown device: " + position.getDeviceId());
+			} 
+			return position;
+		}
 		synchronized (device) {
 			if (numberOfReceived != numberOfSent) {
 				System.out.println("[ERROR] Number of received messages != Number of sent messages: "+numberOfReceived+", "+numberOfSent);
