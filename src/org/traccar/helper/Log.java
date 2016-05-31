@@ -16,6 +16,7 @@
 package org.traccar.helper;
 
 import org.apache.log4j.Appender;
+import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.DailyRollingFileAppender;
 import org.apache.log4j.Layout;
 import org.apache.log4j.Level;
@@ -53,14 +54,16 @@ public final class Log {
 
         Layout layout = new PatternLayout("%d{" + DATE_FORMAT + "} %5p: %m%n");
 
-        Appender appender = new DailyRollingFileAppender(
-                layout, config.getString("logger.file"), "'.'yyyyMMdd");
+        Appender fileAppender = new DailyRollingFileAppender(layout, config.getString("logger.file"), "'.'yyyyMMdd");
+        
+        Appender consoleAppender = new ConsoleAppender(layout);
 
         LogManager.resetConfiguration();
         LogManager.getRootLogger().addAppender(new NullAppender());
 
         logger = Logger.getLogger(LOGGER_NAME);
-        logger.addAppender(appender);
+        logger.addAppender(fileAppender);
+        logger.addAppender(consoleAppender);
         logger.setLevel(Level.toLevel(config.getString("logger.level"), Level.ALL));
 
         // Workaround for "Bug 745866 - (EDG-45) Possible netty logging config problem"

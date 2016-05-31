@@ -35,8 +35,8 @@ public class MQTTDataHandler extends BaseDataHandler {
 	private static String topic = null;
 	private static MqttClient client = null;
 	//private static Map<String, Position> previousPositions = new HashMap<String, Position>();
-	private static double minIdleSpeed = 1.0;
-	private static double minSpeedDetectMovement = 5.0;
+	private static double minIdleSpeed = 0.5;
+	private static double minSpeedDetectMovement = 1.0;
 	private static double maxIdleTime = 300000;
 	private static long numberOfReceived = 0;
 	private static long numberOfSent = 0;
@@ -79,7 +79,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 		if ((previousPosition != null) && (previousPosition.getAttributes().get("key") != null)) {
 			previousKey = Double.valueOf(String.valueOf(previousPosition.getAttributes().get("key"))).intValue();
 		} 
-		System.out.println("[POWER] key="+key+", previousKey="+previousKey+", change="+ (key != previousKey));
+
 		return key != previousKey;
 	}	
 	
@@ -147,6 +147,8 @@ public class MQTTDataHandler extends BaseDataHandler {
 		position.set("startRestTime", position.getDeviceTime().getTime());
 		position.set("restTime", 0);
 		position.set("maxSpeed", 0);
+		position.setSpeed(0.0);
+		
 		position.getAttributes().remove("startTripTime");
 		position.getAttributes().remove("tripTime");
 		position.getAttributes().remove("startIdleTime");
@@ -228,6 +230,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 	private void rest(Position position, Device device) {
 		position.set("key", 0);
 		position.set("state", "stop");
+		position.setSpeed(0.0);
 		Position previousPosition = getPreviousPosition(device.getId());
 		if ((previousPosition != null) && (previousPosition.getAttributes().get("rest") != null)) {
 			position.set("rest", String.valueOf(previousPosition.getAttributes().get("rest")));
@@ -259,8 +262,9 @@ public class MQTTDataHandler extends BaseDataHandler {
 			if (user != null) connOpts.setUserName(user);
 			if (password != null) connOpts.setPassword(password.toCharArray());
 			connOpts.setCleanSession(true);
-			System.out.print("Connecting to broker: " + url+".");
+//			System.out.print("Connecting to broker: " + url+".");
 			client.connect(connOpts);
+//		
 			System.out.println("Connected.");
 		} catch (MqttException e) {
 			e.printStackTrace();
@@ -331,7 +335,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 				System.out.println("[ERROR] Number of received messages != Number of sent messages: "+numberOfReceived+", "+numberOfSent);
 			}
 			numberOfReceived++;
-			System.out.println("[INFO] Received: " + position.toString()); 
+//			System.out.println("[INFO] Received: " + position.toString()); 
 			
 			initKey(position, device);
 				
@@ -347,7 +351,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 				e.printStackTrace();
 			}
 			numberOfSent++;
-			System.out.println("[INFO] Send:" +  content.replaceAll("\\r\\n", ""));
+//			System.out.println("[INFO] Send:" +  content.replaceAll("\\r\\n", ""));
 		}
 		
 		previousPositions.put(device.getId(), position);
