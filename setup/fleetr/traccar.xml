@@ -42,6 +42,8 @@
     <entry key='web.path'>/opt/traccar/web</entry>
 
     <entry key='geocoder.enable'>true</entry>
+    <entry key='geocoder.type'>nominatim</entry>
+    <entry key='geocoder.url'>http://nominatim:8080/reverse</entry>
     <entry key='geocoder.type'>google</entry>
     <entry key='geocoder.processInvalidPositions'>true</entry>
 	<entry key='geocode.processInvalidPositions'>true</entry>
