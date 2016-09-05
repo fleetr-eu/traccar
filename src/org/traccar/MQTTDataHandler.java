@@ -52,6 +52,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 	}
 	
 	protected int getDistance(Position position) {
+		
 		if (position.getAttributes().get("io199") != null) {
 			position.set(Event.KEY_DISTANCE, (Double.valueOf(position.getAttributes().get("io199").toString()).intValue()));
 			return Double.valueOf(String.valueOf(position.getAttributes().get("io199"))).intValue();
@@ -89,6 +90,13 @@ public class MQTTDataHandler extends BaseDataHandler {
 			System.out.println("[ERROR] Key is null for deviceId="+device.getUniqueId());
 			return null;
 		}
+		
+		Position previousPosition = getPreviousPosition(device.getId());
+		if ((position.getAttributes().get("odometer") == null) && (previousPosition.getAttributes().get("odometer") != null)) {
+			System.out.println("[WARN] Odometer is not set, using the odometer from previous position for deviceId="+device.getUniqueId());
+			position.set("odometer", Double.valueOf(String.valueOf(previousPosition.getAttributes().get("odometer"))));
+		}
+		
 		int key = 1;
 		try {
 			key = Double.valueOf(position.getAttributes().get("key").toString()).intValue();
