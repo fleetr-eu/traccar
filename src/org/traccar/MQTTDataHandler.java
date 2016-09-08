@@ -92,10 +92,12 @@ public class MQTTDataHandler extends BaseDataHandler {
 		}
 		
 		Position previousPosition = getPreviousPosition(device.getId());
-		if ((position.getAttributes().get("odometer") == null) && (previousPosition.getAttributes().get("odometer") != null)) {
-			System.out.println("[WARN] Odometer is not set, using the odometer from previous position for deviceId="+device.getUniqueId());
-			position.set("odometer", Double.valueOf(String.valueOf(previousPosition.getAttributes().get("odometer"))));
-		}
+		if ((previousPosition != null) && (position.getAttributes() != null)) {
+			if ((position.getAttributes().get("odometer") == null) && (previousPosition.getAttributes().get("odometer") != null)) {
+				System.out.println("[WARN] Odometer is not set, using the odometer from previous position for deviceId="+device.getUniqueId());
+				position.set("odometer", Double.valueOf(String.valueOf(previousPosition.getAttributes().get("odometer"))));
+			}
+		}	
 		
 		int key = 1;
 		try {
