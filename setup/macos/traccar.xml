@@ -15,7 +15,7 @@
      <entry key='mqtt.topic'>/fleetr/traccar-records</entry>
      <entry key='mqtt.qos'>2</entry>
      <entry key='mqtt.template'>
-     {  "name":"##name##}",
+ {  "name":"##name##",
 		"deviceId": ##deviceId##,
 		"protocol":"##protocol##",
 		"recordTime":{"$date":##deviceTime##},

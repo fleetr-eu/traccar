@@ -14,7 +14,7 @@
 	<entry key='mqtt.clientId'>fleetr_traccar</entry>
 	<entry key='mqtt.qos'>2</entry>
 	<entry key='mqtt.template'>
-	{   "name":"##name##}",
+	{ "name":"##name##",
 		"deviceId": ##deviceId##,
 		"protocol":"##protocol##",
 		"recordTime":{"$date":##deviceTime##},
@@ -199,7 +199,7 @@
     <entry key='database.selectLatestPositions'>
         SELECT * FROM positions WHERE id IN (SELECT positionId FROM devices);
     </entry>
-    
+
     <entry key='database.selectLatestPosition'>
         SELECT * FROM positions WHERE id = :positionId;
     </entry>
