@@ -38,6 +38,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 	private static double minIdleSpeed = 0.5;
 	private static double minSpeedDetectMovement = 1.0;
 	private static double maxIdleTime = 300000;
+	private static double minDistance = 0.00001;
 	private static long numberOfReceived = 0;
 	private static long numberOfSent = 0;
 	
@@ -198,11 +199,19 @@ public class MQTTDataHandler extends BaseDataHandler {
 		if ((previousPosition != null) && (previousPosition.getAttributes().get("idleTime") != null)) {
 			return Double.valueOf(String.valueOf(position.getAttributes().get("idleTime"))).longValue() > maxIdleTime;
 		}
-		return false; 
-			
+		return false; 	
 	}
 
 	private void move(Position position, Device device) {
+		double distance = 0;
+		try {
+			distance = Double.valueOf(getDistance(position));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		if (distance < minDistance) {
+			position.setSpeed(0);
+		}
 		position.set("key", 1);
 		position.set("state", "start");
 		Position previousPosition = getPreviousPosition(device.getId());
