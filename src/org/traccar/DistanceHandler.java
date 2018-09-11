@@ -73,7 +73,14 @@ public class DistanceHandler extends BaseDataHandler {
             }
         }
         position.set(Position.KEY_DISTANCE, distance);
-        totalDistance = BigDecimal.valueOf(totalDistance + distance).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
+        
+        //Only update distance is the ignition is true
+        if (position.getAttributes().containsKey(Position.KEY_IGNITION)) {
+            boolean ignition = position.getBoolean(Position.KEY_IGNITION);
+            if (ignition) {
+            	totalDistance = BigDecimal.valueOf(totalDistance + distance).setScale(2, RoundingMode.HALF_EVEN).doubleValue();
+            }
+        }
         position.set(Position.KEY_TOTAL_DISTANCE, totalDistance);
 
         return position;

@@ -173,6 +173,11 @@
             <artifactId>ch-smpp</artifactId>
             <version>6.0.0-netty4-beta-3</version>
         </dependency>
+        <dependency>
+        	<groupId>org.eclipse.paho</groupId>
+        	<artifactId>org.eclipse.paho.client.mqttv3</artifactId>
+        	<version>1.2.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -197,13 +202,13 @@
                     <configLocation>checkstyle.xml</configLocation>
                 </configuration>
                 <executions>
-                    <execution>
+                    <!-- <execution>
                         <id>checkstyle</id>
                         <phase>validate</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
-                    </execution>
+                    </execution> -->
                 </executions>
             </plugin>
             <plugin>
@@ -274,6 +279,7 @@
                         <artifactId>extra-enforcer-rules</artifactId>
                         <version>1.0-beta-9</version>
                     </dependency>
+                    
                 </dependencies>
             </plugin>
         </plugins>
