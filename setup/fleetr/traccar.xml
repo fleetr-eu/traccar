@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<!DOCTYPE properties SYSTEM 'http://java.sun.com/dtd/properties.dtd'>
+
+<properties>
+
+  <!-- FLEETR CONFIG -->
+  <entry key='teltonika.enable'>true</entry>
+
+  <entry key='fleetr.minIdleSpeed'>1.0</entry>
+
+  <entry key='extra.handlers'>org.traccar.MQTTDataHandler</entry>
+  <entry key='mqtt.url'>tcp://mqtt:1883</entry>
+  <entry key='mqtt.topic'>/fleetr/traccar-records</entry>
+  <entry key='mqtt.clientId'>fleetr_traccar</entry>
+  <entry key='mqtt.qos'>2</entry>
+  <entry key='mqtt.template'>
+	
+	{ "name":"##name##",
+		"deviceId": ##deviceId##,
+		"protocol":"##protocol##",
+		"recordTime":{"$date":##deviceTime##},
+		"offset":##deviceTime##,
+		"fixTime": {"$date":##fixTime##},
+		"valid":##valid##,
+		"lat":##latitude##,
+		"lng":##longitude##,
+		"loc":[##longitude##,##latitude##],
+		"distance":##distance##,
+		"altitude":##altitude##,
+		"speed":##speed##,
+		"maxSpeed":##maxSpeed##,
+		"course":##course##,
+		"state":"##state##",
+		"address":"##address##",
+		"attributes":##attributes##
+	}
+	</entry>
+	
+	<!-- SERVER CONFIG -->
+
+    <entry key='web.enable'>true</entry>
+    <entry key='web.port'>8082</entry>
+    <entry key='web.path'>/opt/traccar/web</entry>
+
+    <entry key='geocoder.enable'>true</entry>
+    <entry key='geocoder.type'>nominatim</entry>
+    <entry key='geocoder.url'>http://nominatim:8080/reverse</entry>
+    <entry key='geocoder.processInvalidPositions'>true</entry>
+	<entry key='geocode.processInvalidPositions'>true</entry>
+
+    <entry key='logger.enable'>true</entry>
+    <entry key='logger.level'>all</entry>
+    <entry key='logger.file'>/opt/traccar/logs/tracker-server.log</entry>
+	
+   </entry>
+
+	<!-- DATABASE CONFIG -->
+    
+    <entry key='database.driver'>org.h2.Driver</entry>
+    <entry key='database.url'>jdbc:h2:./target/database</entry>
+    <entry key='database.user'>sa</entry>
+    <entry key='database.password'></entry>
+
+    <entry key='atrack.custom'>true</entry>
+
+</properties>
