@@ -297,33 +297,33 @@ public class MQTTDataHandler extends BaseDataHandler {
 
 		String template = Context.getConfig().getString("mqtt.template");
 		
-		String request = new String(template);
-		request.replace("##name##", device.getName());
-		request.replace("##deviceId##", device.getUniqueId());
-		request.replace("##protocol##", String.valueOf(position.getProtocol()));
-		request.replace("##deviceTime##", String.valueOf(position.getDeviceTime().getTime()));
-		request.replace("##fixTime##", String.valueOf(position.getFixTime().getTime()));
-		request.replace("##valid##", String.valueOf(position.getValid()));
-		request.replace("##latitude##", String.valueOf(position.getLatitude()));
-		request.replace("##longitude##", String.valueOf(position.getLongitude()));
-		request.replace("##distance##", String.valueOf(getDistance(position)));
-//		request.replace("##odometer##", String.valueOf(device.getOdometer()));
-		request.replace("##altitude##", String.valueOf(position.getAltitude()));
-		request.replace("##speed##", String.valueOf(position.getSpeed()));
-		request.replace("##maxSpeed##", String.valueOf(position.getAttributes().get("maxSpeed")));
-		request.replace("##course##", String.valueOf(position.getCourse()));
-		request.replace("##state##", String.valueOf(position.getAttributes().get("state")));
-		request.replace("##idle##", String.valueOf(position.getAttributes().get("idle")));
-		request.replace("##address##", position.getAddress() != null ?  position.getAddress().replace("\"",  "'") : "");
+		String request = template
+		.replace("##name##", device.getName())
+		.replace("##deviceId##", device.getUniqueId())
+		.replace("##protocol##", String.valueOf(position.getProtocol()))
+		.replace("##deviceTime##", String.valueOf(position.getDeviceTime().getTime()))
+		.replace("##fixTime##", String.valueOf(position.getFixTime().getTime()))
+		.replace("##valid##", String.valueOf(position.getValid()))
+		.replace("##latitude##", String.valueOf(position.getLatitude()))
+		.replace("##longitude##", String.valueOf(position.getLongitude()))
+		.replace("##distance##", String.valueOf(getDistance(position)))
+//		.replace("##odometer##", String.valueOf(device.getOdometer()))
+		.replace("##altitude##", String.valueOf(position.getAltitude()))
+		.replace("##speed##", String.valueOf(position.getSpeed()))
+		.replace("##maxSpeed##", String.valueOf(position.getAttributes().get("maxSpeed")))
+		.replace("##course##", String.valueOf(position.getCourse()))
+		.replace("##state##", String.valueOf(position.getAttributes().get("state")))
+		.replace("##idle##", String.valueOf(position.getAttributes().get("idle")))
+		.replace("##address##", position.getAddress() != null ?  position.getAddress().replace("\"",  "'") : "");
 		
 		try {
 		 	if ((position.getAttributes() == null) || (position.getAttributes().isEmpty())) {
-		 	  request.replace("##attributes##", "{}");
+		 		request = request.replace("##attributes##", "{}");
 		 	} else {
-		 		request.replace("##attributes##", Context.getObjectMapper().writeValueAsString(position.getAttributes()));
+		 		request = request.replace("##attributes##", Context.getObjectMapper().writeValueAsString(position.getAttributes()));
 		 	}
 		} catch (JsonProcessingException e) {
-			request.replace("##attributes##", "{}");
+			request = request.replace("##attributes##", "{}");
 			e.printStackTrace();
 		}
 		return request;
