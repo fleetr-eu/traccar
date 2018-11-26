@@ -173,11 +173,6 @@
             <artifactId>ch-smpp</artifactId>
             <version>6.0.0-netty4-beta-3</version>
         </dependency>
-        <dependency>
-        	<groupId>org.eclipse.paho</groupId>
-        	<artifactId>org.eclipse.paho.client.mqttv3</artifactId>
-        	<version>1.2.0</version>
-        </dependency>
     </dependencies>
 
     <build>

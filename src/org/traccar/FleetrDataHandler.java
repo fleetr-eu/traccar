@@ -1,52 +1,22 @@
-/*
- * Copyright 2015 Anton Tananaev (anton.tananaev@gmail.com)
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.traccar;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import org.eclipse.paho.client.mqttv3.MqttClient;
-import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
-import org.eclipse.paho.client.mqttv3.MqttException;
-import org.eclipse.paho.client.mqttv3.MqttMessage;
-import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.traccar.model.Device;
 import org.traccar.model.Position;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+public class FleetrDataHandler extends BaseDataHandler {
 
-public class MQTTDataHandler extends BaseDataHandler {
-
-	private static int qos = 2;
-	private static String topic = null;
-	private static MqttClient client = null;
+	
 	//private static Map<String, Position> previousPositions = new HashMap<String, Position>();
 	private static double minIdleSpeed = 0.5;
 	private static double minSpeedDetectMovement = 1.0;
 	private static double maxIdleTime = 300000;
 	private static double minDistance = 0.00001;
-	private static long numberOfReceived = 0;
-	private static long numberOfSent = 0;
 	
 	private static Map<Long, Position> previousPositions = new HashMap<Long, Position>();
-	
-	public MQTTDataHandler() {
-		initMQTTClient();
-	}
 	
 	private Position getPreviousPosition(long deviceId) {
 		return previousPositions.get(deviceId);
@@ -66,11 +36,6 @@ public class MQTTDataHandler extends BaseDataHandler {
 		
 		return Double.valueOf(String.valueOf(position.getAttributes().get(Position.KEY_DISTANCE))).intValue();
 	}
-	
-//	protected void updateOdometer(Device device, Position position, Position previousPosition) {
-//		device.setOdometer(device.getOdometer() + getDistance(position));
-//		position.set("odometer", device.getOdometer());
-//	}
 	
 	protected boolean powerChange(Device device, int key) {
 		
@@ -263,71 +228,6 @@ public class MQTTDataHandler extends BaseDataHandler {
 			position.set("restTime", restTime);
 		} 
 	}
-
-	protected static MqttClient initMQTTClient() {
-		if (client != null) {
-			return client;
-		}
-		String url = Context.getConfig().getString("mqtt.url");
-		String clientId = Context.getConfig().getString("mqtt.clientId");
-		String user = Context.getConfig().getString("mqtt.user");
-		String password = Context.getConfig().getString("mqtt.password");
-		topic = Context.getConfig().getString("mqtt.topic");
-		qos = Context.getConfig().getInteger("mqtt.qos");
-		minIdleSpeed = Double.parseDouble(Context.getConfig().getString("fleetr.minIdleSpeed"));
-		try {
-			client = new MqttClient(url, clientId, new MemoryPersistence());
-			MqttConnectOptions connOpts = new MqttConnectOptions();
-			if (user != null) connOpts.setUserName(user);
-			if (password != null) connOpts.setPassword(password.toCharArray());
-			connOpts.setCleanSession(true);
-//			System.out.print("Connecting to broker: " + url+".");
-			client.connect(connOpts);
-//		
-			System.out.println("Connected.");
-		} catch (MqttException e) {
-			e.printStackTrace();
-		}
-		return client;
-	}
-
-	private String formatRequest(Position position) {
-		
-		Device device = Context.getIdentityManager().getById(position.getDeviceId());
-
-		String template = Context.getConfig().getString("mqtt.template");
-		
-		String request = template
-		.replace("##name##", device.getName())
-		.replace("##deviceId##", device.getUniqueId())
-		.replace("##protocol##", String.valueOf(position.getProtocol()))
-		.replace("##deviceTime##", String.valueOf(position.getDeviceTime().getTime()))
-		.replace("##fixTime##", String.valueOf(position.getFixTime().getTime()))
-		.replace("##valid##", String.valueOf(position.getValid()))
-		.replace("##latitude##", String.valueOf(position.getLatitude()))
-		.replace("##longitude##", String.valueOf(position.getLongitude()))
-		.replace("##distance##", String.valueOf(getDistance(position)))
-//		.replace("##odometer##", String.valueOf(device.getOdometer()))
-		.replace("##altitude##", String.valueOf(position.getAltitude()))
-		.replace("##speed##", String.valueOf(position.getSpeed()))
-		.replace("##maxSpeed##", String.valueOf(position.getAttributes().get("maxSpeed")))
-		.replace("##course##", String.valueOf(position.getCourse()))
-		.replace("##state##", String.valueOf(position.getAttributes().get("state")))
-		.replace("##idle##", String.valueOf(position.getAttributes().get("idle")))
-		.replace("##address##", position.getAddress() != null ?  position.getAddress().replace("\"",  "'") : "");
-		
-		try {
-		 	if ((position.getAttributes() == null) || (position.getAttributes().isEmpty())) {
-		 		request = request.replace("##attributes##", "{}");
-		 	} else {
-		 		request = request.replace("##attributes##", Context.getObjectMapper().writeValueAsString(position.getAttributes()));
-		 	}
-		} catch (JsonProcessingException e) {
-			request = request.replace("##attributes##", "{}");
-			e.printStackTrace();
-		}
-		return request;
-	}
 	
 	private void initKey(Position position, Device device) {
 		
@@ -351,8 +251,7 @@ public class MQTTDataHandler extends BaseDataHandler {
 	
 	@Override
 	protected Position handlePosition(Position position) {
-		Device device = Context.getIdentityManager().getById(position.getDeviceId());
-//		updateOdometer(device, position, previousPositions.get(device.getId()));	
+		Device device = Context.getIdentityManager().getById(position.getDeviceId());	
 		if (device == null) {
 			if (position != null) {
 				System.out.println("[WARN] Unknown device: " + position.getDeviceId());
@@ -360,27 +259,8 @@ public class MQTTDataHandler extends BaseDataHandler {
 			return position;
 		}
 		synchronized (device) {
-			if (numberOfReceived != numberOfSent) {
-				System.out.println("[ERROR] Number of received messages != Number of sent messages: "+numberOfReceived+", "+numberOfSent);
-			}
-			numberOfReceived++;
-//			System.out.println("[INFO] Received: " + position.toString()); 
-			
 			initKey(position, device);
-				
 			updatePosition(position, device);
-			
-			String content = formatRequest(position);
-	
-			MqttMessage message = new MqttMessage(content.getBytes());
-			message.setQos(qos);
-			try {
-				client.publish(topic, message);
-			} catch (MqttException e) {
-				e.printStackTrace();
-			}
-			numberOfSent++;
-//			System.out.println("[INFO] Send:" +  content.replaceAll("\\r\\n", ""));
 		}
 		
 		previousPositions.put(device.getId(), position);
